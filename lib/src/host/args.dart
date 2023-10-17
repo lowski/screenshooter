@@ -13,17 +13,12 @@ class ScreenshotArgs {
     _args = parseCommandArguments(argv);
   }
 
-  bool? get build => _args['build'];
-  String? get deviceIdentifier => _args['deviceIdentifier'];
-  String get dir => _args['dir'];
-  String get suffix => _args['suffix'];
-  List<String>? get overlay => _args['overlay'];
   String? get username => _args['username'];
   String? get password => _args['password'];
-  String get suite => _args['suite'];
   String get target => _args['target'];
   String? get device => _args['device'];
   bool get verbose => _args['verbose'];
+  String get path => _args['path'];
 
   ScreenshotConfiguration get configuration => ScreenshotConfiguration(
         username: username ?? Platform.environment['SCREENSHOTS_USERNAME'],
@@ -41,11 +36,6 @@ class ScreenshotArgs {
 ArgResults parseCommandArguments(List<String> argv) {
   var parser = ArgParser();
 
-  parser.addFlag(
-    'build',
-    defaultsTo: null,
-    help: 'Build the screenshot app before running',
-  );
   parser.addOption(
     'target',
     abbr: 't',
@@ -53,24 +43,18 @@ ArgResults parseCommandArguments(List<String> argv) {
     help: 'The target file to run (the entrypoint with the [ScrenshotSuite])',
   );
   parser.addOption(
-    'deviceIdentifier',
-    abbr: 'i',
+    'path',
+    abbr: 'p',
+    defaultsTo: '{name}.png',
+    valueHelp: './{locale}/{name}.png',
     help:
-        'Sets the device identifier, which will be used in a platform specific context:\n'
-        '- platform "ios": appended to the filename (i.e. "IPHONE_62", "IPAD_9")\n'
-        '- platform "android": a subdirectory inside the locale dir (i.e. "phoneScreenshots", "tabletScreenshots")\n',
+        'Sets the path pattern of the screenshots (with placeholders like `{placeholder}`). Available placeholders: locale, name. (Default: {name}.png)',
   );
   parser.addFlag(
     'verbose',
     abbr: 'v',
     defaultsTo: false,
     help: 'Prints more information',
-  );
-  parser.addOption(
-    'dir',
-    defaultsTo: './screenshots',
-    help: 'Path to the directory where the screenshots will be stored (in '
-        'locale specific subdirectories)',
   );
   parser.addMultiOption(
     'locales',
@@ -79,25 +63,10 @@ ArgResults parseCommandArguments(List<String> argv) {
     help: 'A list of locales to run the screenshots for.',
   );
   parser.addOption(
-    'suffix',
-    defaultsTo: '',
-    help:
-        'A suffix to append to the filename. (Filename: <filename><suffix>.png)',
-    valueHelp: 'suffix',
-  );
-  parser.addOption(
     'device',
     defaultsTo: null,
     help:
         'The device to run the screenshots on. (Default: the first available device)',
-  );
-  parser.addMultiOption(
-    'overlay',
-    abbr: 'o',
-    help: 'Applies an overlay to the screenshots containing <pattern>.\n'
-        'Only the first matching overlay is used.\nThe dimensions are not '
-        'adjusted.',
-    valueHelp: 'pattern>:<path to overlay>',
   );
   parser.addOption(
     'username',
@@ -106,12 +75,6 @@ ArgResults parseCommandArguments(List<String> argv) {
   parser.addOption(
     'password',
     help: 'Set the password to use for login. (Default \$SCREENSHOTS_PASSWORD)',
-  );
-  parser.addOption(
-    'suite',
-    defaultsTo: 'default',
-    help: 'The suite to run. Can contain multiple comma-separated values.',
-    abbr: 's',
   );
 
   parser.addFlag(
