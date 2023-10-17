@@ -1,0 +1,16 @@
+name: screenshooter
+description: Automatically create screenshots of your flutter app
+version: 0.1.0
+homepage: https://github.com/lowski/screenshooter
+
+environment:
+  sdk: ">=3.0.3 <4.0.0"
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  args: ^2.0.0
+
+dev_dependencies:
+  flutter_lints: ^2.0.0
