@@ -97,9 +97,9 @@ class ScreenshotArgs {
 
   ScreenshotConfiguration get configuration => ScreenshotConfiguration(
         username:
-            _args['username'] ?? Platform.environment['SCREENSHOTS_USERNAME'],
+            _args['username'] ?? Platform.environment['SCREENSHOOTER_USERNAME'],
         password:
-            _args['password'] ?? Platform.environment['SCREENSHOTS_PASSWORD'],
+            _args['password'] ?? Platform.environment['SCREENSHOOTER_PASSWORD'],
         // we make this roundtrip to make sure the locales are valid
         locales: _locales == null
             ? null
@@ -151,11 +151,13 @@ ArgResults parseCommandArguments(List<String> argv) {
   );
   parser.addOption(
     'username',
-    help: 'Set the username to use for login. (Default \$SCREENSHOTS_USERNAME)',
+    help:
+        'Set the username to use for login. (Default \$SCREENSHOOTER_USERNAME)',
   );
   parser.addOption(
     'password',
-    help: 'Set the password to use for login. (Default \$SCREENSHOTS_PASSWORD)',
+    help:
+        'Set the password to use for login. (Default \$SCREENSHOOTER_PASSWORD)',
   );
 
   parser.addFlag(

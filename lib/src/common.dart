@@ -76,13 +76,13 @@ class ScreenshotConfiguration {
     this.password,
     String? locales,
     this.isActive =
-        const bool.fromEnvironment('SCREENSHOT_MODE', defaultValue: false),
+        const bool.fromEnvironment('SCREENSHOOTER_ACTIVE', defaultValue: false),
   }) : _locales = locales;
 
   /// The active configuration for the client.
   static const ScreenshotConfiguration fromEnv = ScreenshotConfiguration(
-    username: String.fromEnvironment('SCREENSHOT_USERNAME'),
-    password: String.fromEnvironment('SCREENSHOT_PASSWORD'),
-    locales: String.fromEnvironment('SCREENSHOT_LOCALES'),
+    username: String.fromEnvironment('SCREENSHOOTER_USERNAME'),
+    password: String.fromEnvironment('SCREENSHOOTER_PASSWORD'),
+    locales: String.fromEnvironment('SCREENSHOOTER_LOCALES'),
   );
 }

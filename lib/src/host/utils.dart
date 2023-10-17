@@ -19,12 +19,12 @@ Future<ProcessResult> exec(List<String> args) async {
 extension ScreenshotConfigurationExtension on ScreenshotConfiguration {
   /// Add the configuration to the process. Null values will be omitted.
   void addToProcess(FlutterProcess process) {
-    if (username != null) process.define('SCREENSHOTS_USERNAME', username!);
-    if (password != null) process.define('SCREENSHOTS_PASSWORD', password!);
-    process.define('SCREENSHOT_MODE', 'true');
+    if (username != null) process.define('SCREENSHOOTER_USERNAME', username!);
+    if (password != null) process.define('SCREENSHOOTER_PASSWORD', password!);
+    process.define('SCREENSHOOTER_MODE', 'active');
     if (locales != null) {
       process.define(
-        'SCREENSHOT_LOCALES',
+        'SCREENSHOOTER_LOCALES',
         locales!.map((l) => l.toLanguageTag()).join(','),
       );
     }
