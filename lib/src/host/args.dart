@@ -16,7 +16,6 @@ class ScreenshotArgs {
   bool? get build => _args['build'];
   String? get deviceIdentifier => _args['deviceIdentifier'];
   String get dir => _args['dir'];
-  List<String>? get locales => _args['locales'];
   String get suffix => _args['suffix'];
   List<String>? get overlay => _args['overlay'];
   String? get username => _args['username'];
@@ -29,6 +28,12 @@ class ScreenshotArgs {
   ScreenshotConfiguration get configuration => ScreenshotConfiguration(
         username: username ?? Platform.environment['SCREENSHOTS_USERNAME'],
         password: password ?? Platform.environment['SCREENSHOTS_PASSWORD'],
+        // we make this roundtrip to make sure the locales are valid
+        locales: _args['locales'] == null
+            ? null
+            : ScreenshotLocale.fromStrings(_args['locales']!)
+                .map((e) => e.toLanguageTag())
+                .join(','),
       );
 }
 
@@ -70,7 +75,8 @@ ArgResults parseCommandArguments(List<String> argv) {
   parser.addMultiOption(
     'locales',
     abbr: 'l',
-    help: 'A list of locales to run the screenshots for. (Default: all)',
+    splitCommas: true,
+    help: 'A list of locales to run the screenshots for.',
   );
   parser.addOption(
     'suffix',

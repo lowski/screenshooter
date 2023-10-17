@@ -1,5 +1,7 @@
 // ignore_for_file: deprecated_member_use_from_same_package
 
+import 'package:screenshooter/screenshooter.dart';
+
 enum IpcMessageType {
   screenshot,
   info,
@@ -40,7 +42,7 @@ sealed class IpcMessage {
 
 class ScreenshotIpcMessage extends IpcMessage {
   final String name;
-  final String? locale;
+  final ScreenshotLocale? locale;
 
   ScreenshotIpcMessage({
     required this.name,
@@ -49,14 +51,16 @@ class ScreenshotIpcMessage extends IpcMessage {
           IpcMessageType.screenshot,
           {
             'name': name,
-            'locale': locale,
+            'locale': locale?.toLanguageTag(),
           },
         );
 
   factory ScreenshotIpcMessage.fromJson(Map<String, dynamic> json) {
     return ScreenshotIpcMessage(
       name: json['name'],
-      locale: json['locale'],
+      locale: json['locale'] == null
+          ? null
+          : ScreenshotLocale.fromString(json['locale']!),
     );
   }
 }

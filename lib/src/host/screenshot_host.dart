@@ -49,7 +49,8 @@ class ScreenshotHost {
   Future<void> _onMessage(IpcMessage message) async {
     if (message.type == IpcMessageType.screenshot) {
       final screenshotMessage = message as ScreenshotIpcMessage;
-      await simulator?.screenshot('${screenshotMessage.name}.png');
+      final localePrefix = screenshotMessage.locale?.toLanguageTag() ?? '';
+      await simulator?.screenshot('$localePrefix${screenshotMessage.name}.png');
     } else if (message.type == IpcMessageType.info) {
       final infoMessage = message as InfoIpcMessage;
       print(infoMessage.message);
