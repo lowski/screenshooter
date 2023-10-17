@@ -20,7 +20,7 @@ class ScreenshotHost {
 
   ScreenshotHost({
     List<String>? argv,
-  })  : args = ScreenshotArgs.parse(argv ?? []),
+  })  : args = ScreenshotArgs(argv ?? []),
         _process = FlutterProcess.run();
 
   /// Run the screenshot host.
