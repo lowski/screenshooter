@@ -12,12 +12,14 @@ class _ScreenshotFileConfig {
   final List<String>? locales;
   final String? target;
   final Map<String, String>? devices;
+  final String? bundleId;
 
   _ScreenshotFileConfig._({
     this.path,
     this.locales,
     this.target,
     this.devices,
+    this.bundleId,
   });
 
   factory _ScreenshotFileConfig.fromJson(Map json) => _ScreenshotFileConfig._(
@@ -25,6 +27,7 @@ class _ScreenshotFileConfig {
         locales: json['locales']?.cast<String>(),
         target: json['target'],
         devices: json['devices']?.cast<String, String>(),
+        bundleId: json['bundleId'],
       );
 
   /// Loads the configuration from a file. First, it tries to load the
@@ -90,6 +93,7 @@ class ScreenshotArgs {
   bool get verbose => _args['verbose'] ?? false;
   String get path => _args['path'] ?? _fileConfig.path ?? '{name}.png';
   Map<String, String> get devices => _fileConfig.devices ?? {};
+  String? get bundleId => _args['bundleId'] ?? _fileConfig.bundleId;
 
   List<String>? get _locales => (_args['locales'] as List?)?.isNotEmpty ?? false
       ? _args['locales']
@@ -131,6 +135,10 @@ ArgResults parseCommandArguments(List<String> argv) {
     valueHelp: './{locale}/{name}.png',
     help:
         'Sets the path pattern of the screenshots (with placeholders like `{placeholder}`). Available placeholders: locale, name. (Default: {name}.png)',
+  );
+  parser.addOption(
+    'bundleId',
+    help: 'The bundle ID of the app to run the screenshots for.',
   );
   parser.addFlag(
     'verbose',

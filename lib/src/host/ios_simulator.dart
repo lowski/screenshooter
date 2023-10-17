@@ -99,10 +99,27 @@ class IosSimulator {
     }
 
     for (var i = 0; i < (this.orientation.index - orientation.index) % 4; i++) {
+      // ignore: deprecated_member_use_from_same_package
       await rotate(IosSimulatorRotation.left);
     }
 
     assert(this.orientation == orientation);
+  }
+
+  /// Install the .app bundle located at [path] on the simulator.
+  Future<void> installApp(String path) async {
+    if (!isBooted) {
+      throw StateError('Simulator is not booted.');
+    }
+    await exec(['xcrun', 'simctl', 'install', deviceId, path]);
+  }
+
+  /// Launch the app with the bundle identifier [bundleId] on the simulator.
+  Future<void> launchApp(String bundleId) async {
+    if (!isBooted) {
+      throw StateError('Simulator is not booted.');
+    }
+    await exec(['xcrun', 'simctl', 'launch', deviceId, bundleId]);
   }
 
   /// List all available simulators.

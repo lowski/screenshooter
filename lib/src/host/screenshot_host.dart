@@ -20,32 +20,41 @@ class ScreenshotHost {
 
   /// Run the screenshot host.
   Future<void> run() async {
+    await _build();
     for (final device in args.devices.entries) {
       await _runDevice(device.key, device.value);
     }
   }
 
-  Future<void> _runDevice(String deviceName, [String? deviceId]) async {
-    currentDeviceId = deviceId;
-
-    simulator = await _findSimulator(deviceName);
-    await simulator!.boot();
-
-    final process = FlutterProcess.run();
-    process.device = deviceName;
-    process.target = args.target;
+  Future<void> _build() async {
+    final process = FlutterProcess.buildIosDebug();
+    process.arguments.add('--simulator');
+    process.arguments.add('--no-codesign');
     args.configuration.addToProcess(process);
-
-    final ipcServer = await IpcServer.start();
-    ipcServer.onMessage = _onMessage;
 
     await process.start(
       pipeOutput: args.verbose,
     );
+    await process.done;
+  }
+
+  /// Upload an existing app bundle to the simulator and run it.
+  Future<void> _runDevice(
+    String deviceName,
+    String? deviceId,
+  ) async {
+    currentDeviceId = deviceId;
+    simulator = await _findSimulator(deviceName);
+    await simulator!.boot();
+
+    final ipcServer = await IpcServer.start();
+    ipcServer.onMessage = _onMessage;
+
+    await simulator!.installApp('build/ios/iphonesimulator/Runner.app');
+    await simulator!.launchApp(args.bundleId!);
 
     await ipcServer.clientDone;
     await ipcServer.close();
-    await process.kill();
   }
 
   Future<IosSimulator> _findSimulator(String name) async {

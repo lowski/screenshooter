@@ -7,7 +7,7 @@ class FlutterProcess {
   final String _command;
   Process? _process;
 
-  final _arguments = <String>[];
+  final List<String> _arguments;
 
   /// A complete list of all the command arguments for the process.
   List<String> get arguments {
@@ -35,9 +35,11 @@ class FlutterProcess {
   /// Which file to run.
   String? target;
 
-  FlutterProcess._(this._command);
+  FlutterProcess._(this._command, [this._arguments = const []]);
 
   FlutterProcess.run() : this._('run');
+
+  FlutterProcess.buildIosDebug() : this._('build', ['ios', '--debug']);
 
   /// Add a dart define to the process.
   void define(String key, String value) => _dartDefines[key] = value;
@@ -61,6 +63,8 @@ class FlutterProcess {
           );
     }
   }
+
+  Future<void> get done => _process!.exitCode;
 
   /// Kill the process.
   Future<void> kill() async {
