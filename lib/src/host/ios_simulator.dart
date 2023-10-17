@@ -2,6 +2,18 @@ import 'dart:convert';
 
 import 'utils.dart';
 
+class IosSimulatorSize {
+  final double width;
+  final double height;
+
+  IosSimulatorSize(this.width, this.height);
+
+  @override
+  String toString() {
+    return 'IosSimulatorSize($width, $height)';
+  }
+}
+
 enum IosSimulatorPlatform {
   iPhone,
   iPad,
@@ -120,6 +132,50 @@ class IosSimulator {
       throw StateError('Simulator is not booted.');
     }
     await exec(['xcrun', 'simctl', 'launch', deviceId, bundleId]);
+  }
+
+  Future<IosSimulatorSize> get size async {
+    final result = await exec([
+      'xcrun',
+      'simctl',
+      'io',
+      deviceId,
+      'enumerate',
+    ]);
+    final ports = (result.stdout as String).split('Port:').map((e) => e.trim());
+    // Example port we are looking for:
+    // Port:
+    //     UUID: 09022C69-26FE-4A81-BFB7-F4B9F8B8C842
+    //     Class: Display
+    //     Port Identifier: com.apple.framebuffer.display
+    //     Power state: On
+    //     Display class: 0
+    //     Default width: 1284
+    //     Default height: 2778
+    //     Default pixel format: 'BGRA'
+    //     IOSurface port:
+    //         width              = 1284
+    //         height             = 2778
+    //         bytes per row      = 5184
+    //         size               = 14401536
+    //         pixel format       = 'BGRA'
+    //         bytes per element  = 4
+    //         CPU cache mode     = Default cache
+    //         Pixel size casting = Yes
+
+    final port = ports.firstWhere((element) => element.contains('IOSurface'));
+    final lines = port.split('\n');
+    final width = lines
+        .firstWhere((element) => element.trim().startsWith('Default width'))
+        .split(':')
+        .last
+        .trim();
+    final height = lines
+        .firstWhere((element) => element.trim().startsWith('Default height'))
+        .split(':')
+        .last
+        .trim();
+    return IosSimulatorSize(double.parse(width), double.parse(height));
   }
 
   /// List all available simulators.
