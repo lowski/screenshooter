@@ -11,17 +11,20 @@ class _ScreenshotFileConfig {
   final String? path;
   final List<String>? locales;
   final String? target;
+  final Map<String, String>? devices;
 
   _ScreenshotFileConfig._({
     this.path,
     this.locales,
     this.target,
+    this.devices,
   });
 
   factory _ScreenshotFileConfig.fromJson(Map json) => _ScreenshotFileConfig._(
         path: json['path'],
         locales: json['locales']?.cast<String>(),
         target: json['target'],
+        devices: json['devices']?.cast<String, String>(),
       );
 
   /// Loads the configuration from a file. First, it tries to load the
@@ -86,6 +89,7 @@ class ScreenshotArgs {
   String? get device => _args['device'];
   bool get verbose => _args['verbose'] ?? false;
   String get path => _args['path'] ?? _fileConfig.path ?? '{name}.png';
+  Map<String, String> get devices => _fileConfig.devices ?? {};
 
   List<String>? get _locales => (_args['locales'] as List?)?.isNotEmpty ?? false
       ? _args['locales']

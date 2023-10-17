@@ -8,42 +8,54 @@ import 'ipc_server.dart';
 import 'utils.dart';
 
 class ScreenshotHost {
-  final FlutterProcess _process;
-  IpcServer? ipcServer;
-  IosSimulator? simulator = IosSimulator(
-    deviceId: 'booted',
-    name: 'iPhone 14 Plus',
-    platform: IosSimulatorPlatform.iPhone,
-  )..isBooted = true;
+  IosSimulator? simulator;
 
   final ScreenshotArgs args;
 
+  String? currentDeviceId;
+
   ScreenshotHost({
     List<String>? argv,
-  })  : args = ScreenshotArgs(argv ?? []),
-        _process = FlutterProcess.run();
+  }) : args = ScreenshotArgs(argv ?? []);
 
   /// Run the screenshot host.
   Future<void> run() async {
-    if (simulator != null) {
-      await simulator!.boot();
-      _process.device = simulator!.name;
-    } else if (args.device != null) {
-      _process.device = args.device;
+    for (final device in args.devices.entries) {
+      await _runDevice(device.key, device.value);
     }
-    _process.target = args.target;
-    args.configuration.addToProcess(_process);
+  }
 
-    ipcServer = await IpcServer.start();
-    ipcServer!.onMessage = _onMessage;
+  Future<void> _runDevice(String deviceName, [String? deviceId]) async {
+    currentDeviceId = deviceId;
 
-    await _process.start(
+    simulator = await _findSimulator(deviceName);
+    await simulator!.boot();
+
+    final process = FlutterProcess.run();
+    process.device = deviceName;
+    process.target = args.target;
+    args.configuration.addToProcess(process);
+
+    final ipcServer = await IpcServer.start();
+    ipcServer.onMessage = _onMessage;
+
+    await process.start(
       pipeOutput: args.verbose,
     );
 
-    await ipcServer!.clientDone;
-    await ipcServer!.close();
-    await _process.kill();
+    await ipcServer.clientDone;
+    await ipcServer.close();
+    await process.kill();
+  }
+
+  Future<IosSimulator> _findSimulator(String name) async {
+    final simulators = await IosSimulator.listAll();
+    return simulators.firstWhere(
+      (element) => element.name == name,
+      orElse: () => throw Exception(
+        'No simulator with the name "$name" found',
+      ),
+    );
   }
 
   Future<void> _onMessage(IpcMessage message) async {
@@ -57,14 +69,21 @@ class ScreenshotHost {
   }
 
   Future<void> _saveScreenshot(ScreenshotIpcMessage msg) async {
-    final locale = msg.locale?.toLanguageTag() ?? 'none';
-
     String filename = args.path;
     if (filename.contains('{locale}')) {
-      filename = filename.replaceAll('{locale}', locale);
+      filename = filename.replaceAll(
+        '{locale}',
+        msg.locale?.toLanguageTag() ?? 'none',
+      );
     }
     if (filename.contains('{name}')) {
       filename = filename.replaceAll('{name}', msg.name);
+    }
+    if (filename.contains('{device}')) {
+      filename = filename.replaceAll(
+        '{device}',
+        currentDeviceId ?? 'unknownDevice',
+      );
     }
     await File(filename).create(recursive: true);
 
