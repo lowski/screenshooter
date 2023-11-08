@@ -28,8 +28,9 @@ class ScreenshotHost {
 
   Future<void> _build() async {
     final process = FlutterProcess.buildIosDebug();
-    process.arguments.add('--simulator');
-    process.arguments.add('--no-codesign');
+    process.addFlag('--simulator');
+    process.addFlag('--no-codesign');
+    process.target = args.target;
     args.configuration.addToProcess(process);
 
     await process.start(

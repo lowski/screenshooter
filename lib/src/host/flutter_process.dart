@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,7 +11,7 @@ class FlutterProcess {
   final List<String> _arguments;
 
   /// A complete list of all the command arguments for the process.
-  List<String> get arguments {
+  UnmodifiableListView<String> get arguments {
     final args = <String>[_command, ..._arguments];
 
     for (final entry in _dartDefines.entries) {
@@ -18,14 +19,16 @@ class FlutterProcess {
     }
 
     if (device != null) {
-      args.addAll(['-d', device!]);
+      args.addAll(['--device', device!]);
     }
     if (target != null) {
-      args.addAll(['-t', target!]);
+      args.addAll(['--target', target!]);
     }
 
-    return args;
+    return UnmodifiableListView(args);
   }
+
+  void addFlag(String arg) => _arguments.add(arg);
 
   final _dartDefines = <String, String>{};
 
