@@ -214,6 +214,19 @@ class IosSimulator {
     return simulators;
   }
 
+  /// Create a new simulator with the given [modelName] that has the same name as
+  /// the model.
+  static Future<IosSimulator?> create(String modelName) async {
+    final result =
+        await exec(['xcrun', 'simctl', 'create', modelName, modelName]);
+    final simulators = await listAll();
+    return simulators.firstWhere(
+      (element) => element.name == modelName,
+      orElse: () =>
+          throw Exception('Simulator creation failed: ${result.stderr}'),
+    );
+  }
+
   @override
   String toString() {
     return 'IosSimulator($name, $deviceId, $platform)';
