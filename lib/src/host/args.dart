@@ -7,6 +7,88 @@ import 'package:checked_yaml/checked_yaml.dart';
 
 import '../common.dart';
 
+T? _loadFromYaml<T>(
+  String path, {
+  String? key,
+  required T Function(Map) fromJson,
+}) {
+  final file = File(path);
+  if (!file.existsSync()) {
+    return null;
+  }
+  final content = file.readAsStringSync();
+  return checkedYamlDecode(
+    content,
+    (yaml) => yaml == null
+        ? null
+        : fromJson(
+            Map.from(key == null ? yaml : yaml[key]),
+          ),
+  );
+}
+
+class ScreenshotFrameConfig {
+  final String? background;
+  final num? paddingPercent;
+  final Map<String, Map<String, String>>? titles;
+  final String? font;
+  final num? fontSize;
+  final String? fontColor;
+  final List<String>? frameSelectors;
+  final String suffixFrame;
+  final String suffixText;
+
+  ScreenshotFrameConfig._({
+    this.background,
+    this.paddingPercent,
+    this.titles,
+    this.font,
+    this.fontSize,
+    this.fontColor,
+    this.frameSelectors,
+    this.suffixFrame = '_framed',
+    this.suffixText = '',
+  });
+
+  factory ScreenshotFrameConfig.fromJson(Map json) => ScreenshotFrameConfig._(
+        background: json['background'],
+        paddingPercent: json['paddingPercent'],
+        titles:
+            (json['titles'] as Map?)?.map((k, v) => MapEntry(k, Map.from(v))),
+        font: json['font'],
+        fontSize: json['fontSize'],
+        fontColor: json['fontColor'],
+        frameSelectors: (json['frameSelectors'] as List?)?.cast<String>(),
+        suffixFrame: json['suffixFrame'] ?? '_framed',
+        suffixText: json['suffixText'] ?? '',
+      );
+
+  /// Loads the configuration from a file. First, it tries to load the
+  /// configuration from a `screenshooter.frames.yaml` file. If that does not
+  /// exist, it tries to load it from a `screenshooter.yaml` file. If that does
+  /// not exist, it tries to load it from a 'pubspec.yaml' file.
+  /// If that does not exist, it returns an empty configuration.
+  factory ScreenshotFrameConfig.fromConfigFiles() =>
+      ScreenshotFrameConfig.fromFile('screenshooter.frames.yaml', key: null) ??
+      ScreenshotFrameConfig.fromFile('screenshooter.yaml', key: 'frames') ??
+      ScreenshotFrameConfig.fromFile('pubspec.yaml', key: 'frames') ??
+      ScreenshotFrameConfig._();
+
+  /// Loads the configuration from a YAML file.
+  ///
+  /// The [key] is the key in the YAML file to look for. If it is `null`, the
+  /// whole YAML file is parsed.
+  static ScreenshotFrameConfig? fromFile(
+    String path, {
+    String? key = 'frames',
+  }) =>
+      _loadFromYaml(
+        path,
+        key: key,
+        fromJson: ScreenshotFrameConfig.fromJson,
+      );
+}
+
 class _ScreenshotFileConfig {
   final String? path;
   final List<String>? locales;
