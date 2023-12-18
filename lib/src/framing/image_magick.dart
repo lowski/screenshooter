@@ -15,11 +15,14 @@ class MagickOp {
         ),
       ];
 
-  MagickOp(String cmd, dynamic arg)
+  MagickOp(String cmd, [dynamic arg])
       : prev = [],
         _args = [
           if (cmd.isNotEmpty) '-$cmd',
-          if (arg is List) ...arg.map((e) => e.toString()) else arg.toString(),
+          if (arg is List)
+            ...arg.map((e) => e.toString())
+          else if (arg != null)
+            arg.toString(),
         ];
 
   MagickOp.chained(this.prev, this._args);
@@ -28,13 +31,20 @@ class MagickOp {
     return MagickOp.chained([...prev, this, ...op.prev], op._args);
   }
 
+  MagickOp grouped() => MagickOp.chained(
+        [MagickOp('', '('), ...prev, this],
+        [')'],
+      );
+
   Future<String> run(String? input, String output) async {
-    final result = await exec([
+    final args = [
       'magick',
       if (input != null) input,
-      ...args,
+      ...this.args,
       output,
-    ]);
+    ];
+    // print(args.map((e) => e.contains(' ') ? '"$e"' : e).join(' '));
+    final result = await exec(args);
     return result.stdout;
   }
 
@@ -51,7 +61,7 @@ class MagickOp {
 
   MagickOp.extent({
     required dynamic width,
-    required dynamic height,
+    dynamic height,
   }) : this('extent', '${width ?? ''}x${height ?? ''}');
 
   MagickOp.splice({
@@ -78,6 +88,19 @@ class MagickOp {
   MagickOp.fill(String color) : this('fill', color);
 
   MagickOp.format(String format) : this('format', format);
+
+  MagickOp.compose(String compose) : this('compose', compose);
+
+  MagickOp.composite() : this('composite');
+
+  MagickOp.trim() : this('trim');
+
+  MagickOp.input(String input) : this('', input);
+
+  MagickOp.geometry({
+    dynamic x,
+    dynamic y,
+  }) : this('geometry', ['+$x+$y']);
 
   factory MagickOp.addSpaceBelow(dynamic size) =>
       MagickOp.gravity('south').chain(
@@ -114,4 +137,39 @@ class MagickOp {
 
     return op.chain(MagickOp.annotate(text: text, x: x, y: y));
   }
+
+  factory MagickOp.mask() =>
+      MagickOp.compose('DstIn').chain(MagickOp.composite());
+}
+
+Future<CSize> getTextSize({
+  required String text,
+  String? font,
+  num? fontSize,
+}) async {
+  var op = MagickOp('size', 'x');
+  if (font != null) {
+    op = op.chain(MagickOp.font(font));
+  }
+  if (fontSize != null) {
+    op = op.chain(MagickOp.pointsize(fontSize.toInt()));
+  }
+  op = op.chain(MagickOp('', 'label:$text')).chain(MagickOp.format('%wx%h'));
+
+  final result = await op.run(null, 'info:');
+  final parts = result.split('x');
+  return CSize(
+    int.parse(parts[0]),
+    int.parse(parts[1]),
+  );
+}
+
+Future<CSize> getImageSize(String path) async {
+  final result = await MagickOp.format('%wx%h').run(path, 'info:');
+  final parts = result.split('x');
+  final size = CSize(
+    int.parse(parts[0]),
+    int.parse(parts[1]),
+  );
+  return size;
 }

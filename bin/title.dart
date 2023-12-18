@@ -37,11 +37,11 @@ void main(List<String> argv) async {
           orElse: () => '',
         );
 
-        futures.add(applyText(
+        await applyText(
           path: file.path,
           title: titles[titleKey] ?? '',
           cfg: cfg,
-        ));
+        );
       }
     }
   }
@@ -56,7 +56,7 @@ Future<void> applyText({
 }) async {
   final width = 100 - (cfg.paddingPercent ?? 0) * 2;
 
-  final textHeight = await getTextHeight(
+  final textHeight = await getTextSize(
     text: title,
     font: cfg.font,
     fontSize: cfg.fontSize,
@@ -77,36 +77,42 @@ Future<void> applyText({
           text: title,
           color: cfg.fontColor ?? 'black',
           size: cfg.fontSize?.toInt() ?? 24,
-          y: (spaceForText - textHeight) / 2,
+          y: (spaceForText - textHeight.height) / 2,
           font: cfg.font,
         ),
       );
-  await op.run(path, path);
+  await op.run(path, path.replaceAll('.png', '${cfg.suffixText}.png'));
   print('Done: $path');
 }
 
-Future<IosSimulatorSize> getImageSize(String path) async {
-  final result = await MagickOp.format('%wx%h').run(path, 'info:');
-  final parts = result.split('x');
-  return IosSimulatorSize(
-    double.parse(parts[0]),
-    double.parse(parts[1]),
-  );
-}
-
-Future<int> getTextHeight({
-  required String text,
-  String? font,
-  num? fontSize,
+Future<MagickOp> applyTextOperation({
+  required IosSimulatorSize size,
+  required String title,
+  required ScreenshotFrameConfig cfg,
 }) async {
-  var op = MagickOp('size', 'x');
-  if (font != null) {
-    op = op.chain(MagickOp.font(font));
-  }
-  if (fontSize != null) {
-    op = op.chain(MagickOp.pointsize(fontSize.toInt()));
-  }
-  op = op.chain(MagickOp('', 'label:$text')).chain(MagickOp.format('%h'));
+  final width = 100 - (cfg.paddingPercent ?? 0) * 2;
 
-  return int.parse(await op.run(null, 'info:'));
+  final textHeight = await getTextSize(
+    text: title,
+    font: cfg.font,
+    fontSize: cfg.fontSize,
+  );
+
+  const spaceForText = 300;
+
+  return MagickOp.background(cfg.background ?? 'white')
+      .chain(MagickOp.gravity('south'))
+      .chain(MagickOp.resize(width: '$width%'))
+      // .chain(MagickOp.addSpaceTop(1.5 * textHeight))
+      .chain(MagickOp.addSpaceTop(spaceForText))
+      .chain(MagickOp.extent(width: size.width, height: size.height))
+      .chain(
+        MagickOp.text(
+          text: title,
+          color: cfg.fontColor ?? 'black',
+          size: cfg.fontSize?.toInt() ?? 24,
+          y: (spaceForText - textHeight.height) / 2,
+          font: cfg.font,
+        ),
+      );
 }

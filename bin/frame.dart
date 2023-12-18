@@ -2,9 +2,10 @@
 
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
-import 'package:image/image.dart';
 import 'package:screenshooter/src/framing/frame_provider.dart';
+import 'package:screenshooter/src/framing/image_magick.dart';
 import 'package:screenshooter/src/framing/screenshot_frame.dart';
+import 'package:screenshooter/src/framing/utils.dart';
 import 'package:screenshooter/src/host/args.dart';
 
 const _defaultFrameSelectors = ['white', 'silver', 'starlight'];
@@ -14,43 +15,68 @@ void main(List<String> argv) async {
   final cfg = ScreenshotFrameConfig.fromConfigFiles();
 
   print('Downloading frames...');
-  final provider = MetaFrameProvider('./meta-screenshot-frames');
+  final provider = MetaFrameProvider('~/.cache/meta-screenshot-frames');
   await provider.download();
   print('Done.');
 
-  final futures = <Future>[];
+  final deviceNames = args.devices.keys;
+  final locales =
+      args.configuration.locales?.map((e) => e.toLanguageTag()) ?? ['en-US'];
 
-  for (final e in args.devices.entries) {
-    final deviceName = e.key;
-    final deviceId = e.value;
+  int screenshotsTotal = 0;
+  int screenshotsDone = 0;
 
-    String path = args.path
-        .replaceAll('{locale}', '*')
-        .replaceAll('{name}', '*')
-        .replaceAll('{device}', deviceId);
+  for (final (i, deviceName) in deviceNames.indexed) {
+    print(
+        'Framing screenshots for device "$deviceName" (${i + 1} / ${deviceNames.length} devices)...');
+    final deviceId = args.devices[deviceName]!;
 
+    // find the correct frame image
     final overlay = await provider.findBestMatch([
       deviceName,
       ...(cfg.frameSelectors ?? _defaultFrameSelectors)
           .map((e) => e.toLowerCase()),
     ]);
-    final frame = await ScreenshotFrame.fromFile(overlay);
-    print('Using frame "${overlay.split('/').last}"...');
 
-    final glob = Glob(path);
+    // We can pre-load the frame here, because it is the same for all
+    // screenshots of this device.
+    final frame = await ImageMagickScreenshotFrame.fromFile(overlay);
 
-    for (final file in glob.listSync()) {
-      futures.add(decodePngFile(file.path).then((value) async {
-        Image result = frame.apply(value!);
-
-        await encodePngFile(
-          '${file.path.replaceAll('.png', '')}${cfg.suffixFrame}.png',
-          result,
-        );
-        print('Done: ${file.path}');
-      }));
+    // Same for the size of the screenshot
+    final generalPath = args.path
+        .replaceAll('{locale}', '*')
+        .replaceAll('{name}', '*')
+        .replaceAll('{device}', deviceId);
+    final screenshotsForDevice = Glob(generalPath).listSync();
+    if (screenshotsForDevice.isEmpty) {
+      print('No screenshots found for device "$deviceName".');
+      continue;
     }
-    await Future.wait(futures);
-    futures.clear();
+    screenshotsTotal = screenshotsForDevice.length * deviceNames.length;
+    final screenshotSize = await getImageSize(screenshotsForDevice.first.path);
+
+    for (final locale in locales) {
+      String path = args.path
+          .replaceAll('{locale}', locale)
+          .replaceAll('{name}', '*')
+          .replaceAll('{device}', deviceId);
+
+      final glob = Glob(path);
+
+      for (final file in glob.listSync()) {
+        await frame.applyImageMagick(
+          file.path,
+          title: findTitle(
+            cfg: cfg,
+            basename: file.basename,
+            locale: locale,
+          ),
+          screenshotSize: screenshotSize,
+          frameConfig: cfg,
+        );
+        screenshotsDone++;
+        print('[$screenshotsDone/$screenshotsTotal] "${file.path}" done');
+      }
+    }
   }
 }

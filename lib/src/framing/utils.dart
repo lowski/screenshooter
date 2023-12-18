@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:image/image.dart';
 
+import '../host/args.dart';
+
 enum HDirection {
   left,
   right,
@@ -214,4 +216,27 @@ math.Rectangle<int> getInnerScreenEdges(Image image) {
   }
 
   return (mask, edges);
+}
+
+/// Find the title for the screenshot with the given [basename].
+String findTitle({
+  required ScreenshotFrameConfig cfg,
+  required String basename,
+  required String locale,
+  String? deviceId,
+}) {
+  final titles = cfg.titles?[locale] ?? {};
+
+  if (titles.isEmpty) {
+    return '';
+  }
+
+  basename = basename.replaceAll(locale, '').replaceAll(deviceId ?? '', '');
+
+  final titleKey = titles.keys.firstWhere(
+    (element) => basename.contains(element),
+    orElse: () => '',
+  );
+
+  return titles[titleKey] ?? '';
 }

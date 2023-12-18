@@ -30,3 +30,56 @@ extension ScreenshotConfigurationExtension on ScreenshotConfiguration {
     }
   }
 }
+
+/// Custom size to avoid importing possibly conflicting libraries.
+class CSize {
+  final int width;
+  final int height;
+
+  CSize(this.width, this.height);
+
+  @override
+  String toString() => '($width,$height)';
+}
+
+class Profiler {
+  final String name;
+  final Stopwatch _stopwatch;
+  final List<(String, int)> _stages = [];
+
+  int get totalMs =>
+      _stages.fold(0, (prev, e) => e.$1 == 'DISCARD' ? prev : prev + e.$2);
+
+  Profiler(this.name) : _stopwatch = Stopwatch()..start();
+
+  void stage(String name) {
+    _stopwatch.stop();
+    if (_stages.isEmpty) {
+      _stages.add((name, _stopwatch.elapsedMilliseconds));
+    } else {
+      _stages.add((name, _stopwatch.elapsedMilliseconds - _stages.last.$2));
+    }
+    _stopwatch.start();
+  }
+
+  void discard() {
+    stage('DISCARD');
+  }
+
+  void stop() {
+    _stopwatch.stop();
+  }
+
+  @override
+  String toString() {
+    stop();
+    String sb = 'Profiler: $name';
+    for (final (stage, ms) in _stages) {
+      if (stage == 'DISCARD') continue;
+
+      sb += '\n $stage: ${ms}ms';
+    }
+    sb += '\n Total: ${totalMs}ms';
+    return sb;
+  }
+}
