@@ -12,6 +12,7 @@ There are two steps to make your app work with Screenshooter:
 
 1. create the screenshot suite
 2. create the configuraton file
+3. (optional) add configuration for framing
 
 ### Screenshot Suite
 
@@ -102,6 +103,8 @@ locales:
 devices:
   iPhone 14 Plus: iphone_65
   iPhone 8 Plus: iphone_55
+# The name of the file to use as the entrypoint for the app.
+target: lib/screenshots.dart
 ```
 
 ## Usage
@@ -111,3 +114,65 @@ To run screenshooter use `dart run screenshooter` in your projects root director
 To load another configuration file (for example if you have multiple configs) use `dart run screenshooter -f <name of your config.yaml>`
 
 Use `dart run screenshooter --help` for info on all the CLI arguments.
+
+## Adding Device Frames
+
+Screenshooter also includes a fast implementation for framing screenshots. This step is entirely optional and separate from taking the screenshots. Use `dart run screenshooter:frame` to run this postprocessing after creating the screenshots.
+
+In addition to adding a device frame, this tool can also add text on top of the frame using the `titles`. The resulting image is kept in the same size as the original screenshot.
+
+This uses the meta device frames because they are freely available and fairly current. For image processing ImageMagick is used as it is significantly faster than anything that purely uses Dart. The device frames are downloaded automatically into the `~/.cache/meta-device-frames` directory. To find good `frameSelectors` you can have a look in there.
+
+### Notes
+
+#### How is the title selected?
+
+Every titles key is checked against the filename of the screenshot. The first title whose key is contained in the filename is used.
+
+#### How is the device frame selected?
+
+The device name from the screenshooter configuration is used. In the config the name is the key inside the `devices` map.
+
+### Configuration
+
+The configuration is read from `screenshooter.frames.yaml`. If this file does not exist, the config is loaded from the `frames` key in `screenshooter.yaml` or `pubspec.yaml`.
+
+These are all options that are available though not all are required:
+
+```yaml
+# The text to add at the top of each screenshot. The languages correspond to the
+# languages in the `locales` section of the `screenshooter.yaml` file.
+# The first key from this file (e.g. "home", "account") that is found verbatim in the
+# filename of the screenshot is selected.
+titles:
+  en-US:
+    home: This is the home screen
+    account: This is the account screen
+  de-DE:
+    shop: Das ist der Home-Bildschirm
+    account: Das ist der Konto-Bildschirm
+
+# Appended to the filename of the screenshot after framing it.
+suffixFrame: _framed
+# Appended to the filename of the screenshot after adding the text.
+suffixText: _text
+
+# Criteria to select which frames to use. If there are multiple matches in one level in the
+# directory hierarchy, the shortest one is used.
+frameSelectors:
+  - shadow
+  - white
+  - silver
+  - starlight
+# The background color for the screenshot. Can be either a hex color or a color name
+# as recognized by ImageMagick.
+background: black
+# The amount of padding on each side in percent. Relative to the width of
+# the screenshot.
+paddingPercent: 5
+
+# Settings regarding the font used for the title.
+font: ./fonts/OpenSans/OpenSans-Bold.ttf
+fontSize: 75
+fontColor: white
+```
