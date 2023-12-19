@@ -74,6 +74,7 @@ class ScreenshotHost {
       await _saveScreenshot(screenshotMessage);
     } else if (message.type == IpcMessageType.info) {
       final infoMessage = message as InfoIpcMessage;
+      // ignore: avoid_print
       print(infoMessage.message);
     }
   }

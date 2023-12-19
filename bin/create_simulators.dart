@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:screenshooter/src/host/args.dart';
 import 'package:screenshooter/src/host/ios_simulator.dart';
 

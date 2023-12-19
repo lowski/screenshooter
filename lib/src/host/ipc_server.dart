@@ -50,6 +50,7 @@ class IpcServer {
         await onMessage?.call(message);
       }
     } catch (e) {
+      // ignore: avoid_print
       print('Cannot decode IpcMessage: $e');
       request.response.statusCode = HttpStatus.internalServerError;
       request.response.write('Cannot decode IpcMessage');

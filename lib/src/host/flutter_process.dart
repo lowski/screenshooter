@@ -51,6 +51,7 @@ class FlutterProcess {
   Future<void> start({
     bool pipeOutput = false,
   }) async {
+    // ignore: avoid_print
     print('Starting process: `$_executable ${arguments.join(' ')}`');
     _process = await Process.start(_executable, arguments);
     if (pipeOutput) {
