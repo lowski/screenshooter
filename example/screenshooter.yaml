@@ -1,0 +1,20 @@
+# screenshooter.yaml
+
+bundleId: com.example.example
+# This is the path for every screenshot. Placeholders:
+# - {locale} will be replaced by the current locales language tag (BCP47, e.g. `en-US`)
+# - {name} is replaced by the name specified in the `Screenshot`
+# - {device} is replaced by the device identifier (as specified in `devices`)
+path: screenshots/{locale}/{name}_{device}.png
+# All locales to create screenshots for (in BCP47 format with `-` separators). If you omit this
+# the screenshots are just taken once and the {locale} placeholder in the `path` will have the
+# value `none`.
+locales:
+  - en-US
+  - de-DE
+# This is a list of all the simulators to use. The key is the exact name of the iOS Simulator
+# and the value is the identifier used.
+devices:
+  iPhone 14 Plus: iphone_65
+# The name of the file to use as the entrypoint for the app.
+target: lib/screenshots.dart

@@ -1,0 +1,35 @@
+# The text to add at the top of each screenshot. The languages correspond to the
+# languages in the `locales` section of the `screenshooter.yaml` file.
+titles:
+  en-US:
+    home: There is a home page
+    other: There is also another page
+  de-DE:
+    home: Es gibt eine Startseite
+    other: Es gibt auch eine andere Seite
+
+# Appended to the filename of the screenshot after framing it.
+suffixFrame: _framed
+
+# Appended to the filename of the screenshot after adding the text.
+suffixText: "" # no extra label for the version with text
+
+# Criteria to select which frames to use. If there are multiple matches in one level in the
+# directory hierarchy, the shortest one is used.
+frameSelectors:
+  - shadow # we'll use device frames with a shadow on the bottom
+  - white
+  - silver
+  - starlight
+
+# The background color for the screenshot. Can be either a hex color or a color name
+# as recognized by ImageMagick.
+background: "#206080"
+# The amount of padding on each side in percent. Relative to the width of
+# the screenshot.
+paddingPercent: 5
+
+# Settings regarding the font used for the title.
+# font: ./fonts/OpenSans/OpenSans-Bold.ttf # no custom font
+fontSize: 75
+fontColor: "#ffffff"
