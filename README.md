@@ -121,7 +121,9 @@ Screenshooter also includes a fast implementation for framing screenshots. This 
 
 In addition to adding a device frame, this tool can also add text on top of the frame using the `titles`. The resulting image is kept in the same size as the original screenshot.
 
-This uses the meta device frames because they are freely available and fairly current. For image processing ImageMagick is used as it is significantly faster than anything that purely uses Dart. The device frames are downloaded automatically into the `~/.cache/meta-device-frames` directory. To find good `frameSelectors` you can have a look in there.
+This uses the meta device frames because they are freely available and fairly current. For image processing ImageMagick is used as it is significantly faster than anything that purely uses Dart. The device frames are downloaded automatically into the `~/.cache/screenshooter-device-frames` directory. To find good `frameSelectors` you can have a look in there.
+
+NOTE: The download link for the device frames is not static and has to be parsed from an HTML page. The tool should do this automatically but it might fail. To circumvent this, you can download the archive manually from <https://design.facebook.com/toolsandresources/devices/> and unpack it to `~/.cache/screenshooter-device-frames` so that the subdirectory `Meta Devices` contains the folders for the devices.
 
 ### Notes
 

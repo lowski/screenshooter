@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_print
 
+import 'dart:io';
+
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:screenshooter/src/framing/frame_provider.dart';
@@ -15,7 +17,9 @@ void main(List<String> argv) async {
   final cfg = ScreenshotFrameConfig.fromConfigFiles();
 
   print('Downloading frames...');
-  final provider = MetaFrameProvider('~/.cache/meta-screenshot-frames');
+  final provider = MetaFrameProvider(
+    '${Platform.environment['HOME']}/.cache/screenshooter-device-frames',
+  );
   await provider.download();
   print('Done.');
 

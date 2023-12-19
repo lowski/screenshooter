@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
@@ -25,15 +26,15 @@ abstract class FrameProvider {
 }
 
 class MetaFrameProvider extends FrameProvider {
-  static const _archiveUrl =
-      'https://scontent-dus1-1.xx.fbcdn.net/v/t39.8562-6/10000000_929936395109225_7548977251578542904_n.zip?_nc_cat=106&ccb=1-7&_nc_sid=b8d81d&_nc_ohc=fEHvFVVoGn8AX8eXQbu&_nc_ht=scontent-dus1-1.xx&oh=00_AfD1mo2bbo9dPLyy2nfm_zK0Q_tr8myoPDlxPEWF7wjUfQ&oe=6551F95C';
+  static const _webpageUrl =
+      'https://design.facebook.com/toolsandresources/devices/';
 
   MetaFrameProvider(String basePath) : super('$basePath/Meta Devices');
 
   @override
   Future<void> forceDownload() async {
-    await _downloadArchive();
-    await _unpackArchive();
+    final archive = await _downloadArchive();
+    await _unpackArchive(archive);
   }
 
   @override
@@ -42,16 +43,41 @@ class MetaFrameProvider extends FrameProvider {
       return;
     }
 
-    await _downloadArchive();
-    await _unpackArchive();
+    await forceDownload();
   }
 
-  Future<void> _downloadArchive() async {
-    final uri = Uri.parse(_archiveUrl);
+  Future<File> _downloadArchive() async {
+    final guiUri = Uri.parse(_webpageUrl);
+    final guiRequest = await HttpClient().getUrl(guiUri);
+    final guiResponse = await guiRequest.close();
+    final guiHtml = await guiResponse.transform(utf8.decoder).join();
+
+    // There is an <a> tag with the download link in the HTML. We can find it
+    // because there is only one link that ends with .zip. We need to keep any
+    // query parameters, because they are used to authenticate the download.
+    final downloadLink = RegExp(r'href="([^"]+\.zip[^"]+)"')
+        .firstMatch(guiHtml)
+        ?.group(1)
+        ?.replaceAll('&amp;', '&');
+
+    if (downloadLink == null) {
+      // ignore: avoid_print
+      print('\n+--------------------------------------------+\n'
+          '| MANUAL ACTION REQUIRED                     |\n'
+          '+--------------------------------------------+\n'
+          'Could not find download link in HTML. Please download '
+          'the archive manually from $guiUri and extract it to '
+          '"$basePath".\n'
+          'Refer to README.md for more information.\n'
+          '----------------------------------------------\n');
+      throw Exception('Archive url not found.');
+    }
+
+    final uri = Uri.parse(downloadLink);
     final file = File('$basePath/${uri.pathSegments.last}');
 
     if (file.existsSync()) {
-      return;
+      return file;
     }
 
     // ignore: avoid_print
@@ -61,10 +87,10 @@ class MetaFrameProvider extends FrameProvider {
     final request = await HttpClient().getUrl(uri);
     final response = await request.close();
     await response.pipe(file.openWrite());
+    return file;
   }
 
-  Future<void> _unpackArchive() async {
-    final file = File('$basePath/${Uri.parse(_archiveUrl).pathSegments.last}');
+  Future<void> _unpackArchive(File file) async {
     final archive = ZipDecoder().decodeBytes(await file.readAsBytes());
 
     for (final child in archive) {
