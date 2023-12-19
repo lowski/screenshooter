@@ -47,7 +47,7 @@ class IpcServer {
       if (message is ClientDoneIpcMessage) {
         _doneCompleter.complete();
       } else {
-        onMessage?.call(message);
+        await onMessage?.call(message);
       }
     } catch (e) {
       print('Cannot decode IpcMessage: $e');
