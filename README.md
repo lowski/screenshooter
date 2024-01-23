@@ -21,7 +21,7 @@ The screenshot suite is the client-side definition of how every screenshot is ta
 ```dart
 // lib/screenshots.dart
 
-import 'main.dart' as main;
+import 'main.dart' as app;
 
 void main() {
     ScreenshotSuite(
@@ -29,7 +29,7 @@ void main() {
         prepare: () async {
             // This is executed before everything else.
             // You will need to start the real app here
-            main.main();
+            app.main();
         },
         prepareLocale: (ScreenshotLocale locale) async {
             // If you specify locales in the config later, this will be called
@@ -73,7 +73,7 @@ NOTE: All methods return a `Future<void>` which is awaited before proceeding so 
 If you want to access configuration variables at runtime you can use `ScreenshotConfiguration.fromEnv`. This is a constant value so it will not slow down your application when e.g. used in if statements.
 To find out if the app is currently running in screenshot mode use `ScreenshotConfiguration.fromEnv.isActive`.
 
-If you want to log in an example user you can access `ScreenshotConfiguration.fromEnv.username` and `ScreenshotConfiguration.fromEnv.password` which will be filled with the values password to screenshooter.
+If you want to log in an example user you can access `ScreenshotConfiguration.fromEnv.username` and `ScreenshotConfiguration.fromEnv.password` which will be filled with the values passed to screenshooter. These values come from the CLI args `--username` and `--password` or as (recommended) fallback from the environment variables `SCREENSHOOTER_USERNAME` and `SCREENSHOOTER_PASSWORD`.
 
 ### Configuration File
 
