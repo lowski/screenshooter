@@ -58,7 +58,7 @@ class IosSimulator {
     if (isBooted) {
       return;
     }
-    await exec(['xcrun', 'simctl', 'boot', deviceId]);
+    await exec(['xcrun', 'simctl', 'bootstatus', deviceId, '-b']);
     isBooted = true;
   }
 

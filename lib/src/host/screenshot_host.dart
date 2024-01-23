@@ -56,6 +56,7 @@ class ScreenshotHost {
 
     await ipcServer.clientDone;
     await ipcServer.close();
+    await simulator!.shutdown();
   }
 
   Future<IosSimulator> _findSimulator(String name) async {
