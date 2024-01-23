@@ -22,6 +22,7 @@ extension ScreenshotConfigurationExtension on ScreenshotConfiguration {
     if (username != null) process.define('SCREENSHOOTER_USERNAME', username!);
     if (password != null) process.define('SCREENSHOOTER_PASSWORD', password!);
     process.define('SCREENSHOOTER_MODE', 'active');
+    process.define('SCREENSHOOTER_ACTIVE', 'true');
     if (locales != null) {
       process.define(
         'SCREENSHOOTER_LOCALES',
