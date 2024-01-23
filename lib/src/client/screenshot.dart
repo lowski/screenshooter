@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import '../common.dart';
 import '../ipc_message.dart';
 import 'ipc_client.dart';
 
 class Screenshot {
   final String name;
-  final Future<void> Function() prepare;
-  final Future<void> Function()? cleanup;
+  final FutureOr<void> Function() prepare;
+  final FutureOr<void> Function()? cleanup;
   final Duration? delay;
 
   Screenshot({

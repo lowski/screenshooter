@@ -1,12 +1,14 @@
+import 'dart:async';
+
 import 'package:screenshooter/screenshooter.dart';
 
 class ScreenshotSuite {
   final String name;
   final List<Screenshot> screenshots;
-  final Future<void> Function()? prepare;
-  final Future<void> Function(ScreenshotLocale locale)? prepareLocale;
-  final Future<void> Function(ScreenshotLocale locale)? cleanupLocale;
-  final Future<void> Function()? cleanup;
+  final FutureOr<void> Function()? prepare;
+  final FutureOr<void> Function(ScreenshotLocale locale)? prepareLocale;
+  final FutureOr<void> Function(ScreenshotLocale locale)? cleanupLocale;
+  final FutureOr<void> Function()? cleanup;
 
   /// Create a new screenshot suite with the given [name] and [screenshots].
   /// [name] should be unique.
