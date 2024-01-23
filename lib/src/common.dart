@@ -1,3 +1,5 @@
+import 'package:screenshooter/src/client/ipc_client.dart';
+
 /// A simple locale implementation since the one from dart:ui is not available.
 class ScreenshotLocale {
   final String languageCode;
@@ -58,7 +60,18 @@ class ScreenshotLocale {
 class ScreenshotConfiguration {
   final bool isActive;
   final String? username;
-  final String? password;
+  final String? _password;
+  String? get password {
+    if (isActive && _password == null) {
+      IpcClient.sendInfo(
+        '[[ WARNING ]] PASSWORD NOT SET! The password was accessed during a '
+        'screenshot run but is not set. This is probably unintentional. Please '
+        'check if you have set the username/password correctly when running '
+        'the screenshot suite.',
+      );
+    }
+    return _password;
+  }
 
   final String? _locales;
 
@@ -73,11 +86,12 @@ class ScreenshotConfiguration {
   /// [ScreenshotConfiguration.fromEnv].
   const ScreenshotConfiguration({
     this.username,
-    this.password,
+    String? password,
     String? locales,
     this.isActive =
         const bool.fromEnvironment('SCREENSHOOTER_ACTIVE', defaultValue: false),
-  }) : _locales = locales;
+  })  : _locales = locales,
+        _password = password;
 
   /// The active configuration for the client.
   static const ScreenshotConfiguration fromEnv = ScreenshotConfiguration(
