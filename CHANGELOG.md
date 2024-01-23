@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+* Set `ScreenshotConfiguration.fromEnv.isActive` to true when running a suite
+
 ## 1.0.1
 
 * Accept callback functions that do not return a `Future` in `Screenshot` and `ScreenshotSuite`
