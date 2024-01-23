@@ -37,6 +37,7 @@ class ScreenshotFrameConfig {
   final List<String>? frameSelectors;
   final String suffixFrame;
   final String suffixText;
+  final Map<String, String> deviceFrameNames;
 
   ScreenshotFrameConfig._({
     this.background,
@@ -48,6 +49,7 @@ class ScreenshotFrameConfig {
     this.frameSelectors,
     this.suffixFrame = '_framed',
     this.suffixText = '',
+    this.deviceFrameNames = const {},
   });
 
   factory ScreenshotFrameConfig.fromJson(Map json) => ScreenshotFrameConfig._(
@@ -61,6 +63,8 @@ class ScreenshotFrameConfig {
         frameSelectors: (json['frameSelectors'] as List?)?.cast<String>(),
         suffixFrame: json['suffixFrame'] ?? '_framed',
         suffixText: json['suffixText'] ?? '',
+        deviceFrameNames:
+            json['deviceFrameNames']?.cast<String, String>() ?? {},
       );
 
   /// Loads the configuration from a file. First, it tries to load the

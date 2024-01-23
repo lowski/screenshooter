@@ -99,7 +99,7 @@ locales:
   - en-US
   - de-DE
 # This is a list of all the simulators to use. The key is the exact name of the iOS Simulator
-# and the value is the identifier used 
+# and the value is the identifier used.
 devices:
   iPhone 14 Plus: iphone_65
   iPhone 8 Plus: iphone_55
@@ -133,7 +133,7 @@ Every titles key is checked against the filename of the screenshot. The first ti
 
 #### How is the device frame selected?
 
-The device name from the screenshooter configuration is used. In the config the name is the key inside the `devices` map.
+The device name from the screenshooter configuration is used. In the config the name is the key inside the `devices` map. You can override this name by specifying another one in the `deviceFrameNames` object (see below).
 
 ### Configuration
 
@@ -166,6 +166,10 @@ frameSelectors:
   - white
   - silver
   - starlight
+# Override the device name used to select the frame. The key is the device identifier from the screenshooter configuration. The value is the name to use for finding a matching frame instead of the simulator name.
+deviceFrameNames:
+  iphone_55: iPhone SE # The "(3rd generation)" is left out for the name of the frame
+
 # The background color for the screenshot. Can be either a hex color or a color name
 # as recognized by ImageMagick.
 background: black

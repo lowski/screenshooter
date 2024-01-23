@@ -35,12 +35,17 @@ void main(List<String> argv) async {
         'Framing screenshots for device "$deviceName" (${i + 1} / ${deviceNames.length} devices)...');
     final deviceId = args.devices[deviceName]!;
 
+    final isTablet = deviceName.contains('iPad');
+
     // find the correct frame image
     final overlay = await provider.findBestMatch([
-      deviceName,
-      ...(cfg.frameSelectors ?? _defaultFrameSelectors)
-          .map((e) => e.toLowerCase()),
+      cfg.deviceFrameNames.containsKey(deviceId)
+          ? cfg.deviceFrameNames[deviceId]!
+          : deviceName,
+      if (isTablet) 'tablets',
+      ...(cfg.frameSelectors ?? _defaultFrameSelectors),
     ]);
+    print('Using frame "$overlay" for device "$deviceName".');
 
     // We can pre-load the frame here, because it is the same for all
     // screenshots of this device.
