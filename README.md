@@ -103,6 +103,8 @@ locales:
 devices:
   iPhone 14 Plus: iphone_65
   iPhone 8 Plus: iphone_55
+# Which orientation the iPad should be in. Can be `portrait` (default) or `landscape`.
+tabletOrientation: portrait
 # The name of the file to use as the entrypoint for the app.
 target: lib/screenshots.dart
 ```

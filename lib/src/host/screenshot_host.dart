@@ -21,6 +21,9 @@ class ScreenshotHost {
   /// Run the screenshot host.
   Future<void> run() async {
     await _build();
+
+    _bootSimulators(args.devices.keys);
+
     for (final device in args.devices.entries) {
       await _runDevice(device.key, device.value);
     }
@@ -39,6 +42,12 @@ class ScreenshotHost {
     await process.done;
   }
 
+  Future<void> _bootSimulators(Iterable<String> devices) {
+    return Future.wait(devices.map(
+      (device) => _findSimulator(device).then((value) => value.boot()),
+    ));
+  }
+
   /// Upload an existing app bundle to the simulator and run it.
   Future<void> _runDevice(
     String deviceName,
@@ -47,6 +56,10 @@ class ScreenshotHost {
     currentDeviceId = deviceId;
     simulator = await _findSimulator(deviceName);
     await simulator!.boot();
+
+    if (simulator!.platform == IosSimulatorPlatform.iPad) {
+      await simulator!.setOrientation(args.tabletOrientation);
+    }
 
     final ipcServer = await IpcServer.start();
     ipcServer.onMessage = _onMessage;

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:checked_yaml/checked_yaml.dart';
+import 'package:screenshooter/src/host/ios_simulator.dart';
 
 import '../common.dart';
 
@@ -99,6 +100,7 @@ class _ScreenshotFileConfig {
   final String? target;
   final Map<String, String>? devices;
   final String? bundleId;
+  final IosSimulatorOrientation? tabletOrientation;
 
   _ScreenshotFileConfig._({
     this.path,
@@ -106,6 +108,7 @@ class _ScreenshotFileConfig {
     this.target,
     this.devices,
     this.bundleId,
+    this.tabletOrientation = IosSimulatorOrientation.portrait,
   });
 
   factory _ScreenshotFileConfig.fromJson(Map json) => _ScreenshotFileConfig._(
@@ -114,6 +117,15 @@ class _ScreenshotFileConfig {
         target: json['target'],
         devices: json['devices']?.cast<String, String>(),
         bundleId: json['bundleId'],
+        tabletOrientation: switch (json['tabletOrientation']) {
+          'portrait' => IosSimulatorOrientation.portrait,
+          'landscape' || null => IosSimulatorOrientation.landscapeLeft,
+          _ => throw ArgumentError.value(
+              json['tabletOrientation'],
+              'tabletOrientation',
+              'Invalid value',
+            ),
+        },
       );
 
   /// Loads the configuration from a file. First, it tries to load the
@@ -180,6 +192,8 @@ class ScreenshotArgs {
   String get path => _args['path'] ?? _fileConfig.path ?? '{name}.png';
   Map<String, String> get devices => _fileConfig.devices ?? {};
   String? get bundleId => _args['bundleId'] ?? _fileConfig.bundleId;
+  IosSimulatorOrientation get tabletOrientation =>
+      _fileConfig.tabletOrientation ?? IosSimulatorOrientation.portrait;
 
   List<String>? get _locales => (_args['locales'] as List?)?.isNotEmpty ?? false
       ? _args['locales']

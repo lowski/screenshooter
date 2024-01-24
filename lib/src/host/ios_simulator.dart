@@ -29,6 +29,12 @@ enum IosSimulatorOrientation {
   landscapeRight,
 }
 
+extension IosSimulatorOrientationExtension on IosSimulatorOrientation {
+  bool get isLandscape =>
+      this == IosSimulatorOrientation.landscapeLeft ||
+      this == IosSimulatorOrientation.landscapeRight;
+}
+
 enum IosSimulatorRotation {
   left,
   right,
@@ -58,12 +64,14 @@ class IosSimulator {
     if (isBooted) {
       return;
     }
+    await exec(['xcrun', 'simctl', 'boot', deviceId]);
     await exec(['xcrun', 'simctl', 'bootstatus', deviceId, '-b']);
     isBooted = true;
   }
 
   /// Shutdown the simulator.
   Future<void> shutdown() async {
+    await dispose();
     await exec(['xcrun', 'simctl', 'shutdown', deviceId]);
     isBooted = false;
   }
