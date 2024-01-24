@@ -194,6 +194,7 @@ class ScreenshotArgs {
   String? get bundleId => _args['bundleId'] ?? _fileConfig.bundleId;
   IosSimulatorOrientation get tabletOrientation =>
       _fileConfig.tabletOrientation ?? IosSimulatorOrientation.portrait;
+  bool get skipBuild => _args['skip-build'] ?? false;
 
   List<String>? get _locales => (_args['locales'] as List?)?.isNotEmpty ?? false
       ? _args['locales']
@@ -244,6 +245,11 @@ ArgResults parseCommandArguments(List<String> argv) {
     'verbose',
     abbr: 'v',
     help: 'Prints more information',
+  );
+  parser.addFlag(
+    'skip-build',
+    defaultsTo: false,
+    help: 'Skips the build step',
   );
   parser.addMultiOption(
     'locales',

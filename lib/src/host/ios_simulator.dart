@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'utils.dart';
@@ -47,6 +48,10 @@ class IosSimulator {
 
   /// Whether the simulator is booted.
   bool isBooted = false;
+  bool isBooting = false;
+
+  Completer<void>? _bootingCompleter;
+  Future<void> get _booting => _bootingCompleter?.future ?? Future.value();
 
   /// The current orientation of the simulator. This is only valid if the
   /// orientation when the simulator was booted was portrait and the simulator
@@ -64,9 +69,17 @@ class IosSimulator {
     if (isBooted) {
       return;
     }
-    await exec(['xcrun', 'simctl', 'boot', deviceId]);
+    if (isBooting) {
+      return _booting;
+    }
+    isBooting = true;
+    _bootingCompleter = Completer();
+
     await exec(['xcrun', 'simctl', 'bootstatus', deviceId, '-b']);
+
     isBooted = true;
+    isBooting = false;
+    _bootingCompleter!.complete();
   }
 
   /// Shutdown the simulator.

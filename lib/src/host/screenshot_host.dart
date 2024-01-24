@@ -14,14 +14,19 @@ class ScreenshotHost {
 
   String? currentDeviceId;
 
+  List<IosSimulator>? _simulators;
+
   ScreenshotHost({
     List<String>? argv,
   }) : args = ScreenshotArgs(argv ?? []);
 
   /// Run the screenshot host.
   Future<void> run() async {
-    await _build();
+    if (!args.skipBuild) {
+      await _build();
+    }
 
+    _simulators ??= await IosSimulator.listAll();
     _bootSimulators(args.devices.keys);
 
     for (final device in args.devices.entries) {
@@ -73,8 +78,8 @@ class ScreenshotHost {
   }
 
   Future<IosSimulator> _findSimulator(String name) async {
-    final simulators = await IosSimulator.listAll();
-    return simulators.firstWhere(
+    _simulators ??= await IosSimulator.listAll();
+    return _simulators!.firstWhere(
       (element) => element.name == name,
       orElse: () => throw Exception(
         'No simulator with the name "$name" found',
