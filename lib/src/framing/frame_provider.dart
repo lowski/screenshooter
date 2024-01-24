@@ -125,8 +125,7 @@ class MetaFrameProvider extends FrameProvider {
     String currentPath = basePath;
     while (FileSystemEntity.isDirectorySync(currentPath)) {
       String currentDefaultPath = currentPath + currentPath;
-      String? foundVariantMatch;
-      String shortestVariantMatchPath = currentDefaultPath;
+      Map<String, List<String>> possibleMatches = {};
 
       for (final entity in Directory(currentPath).listSync()) {
         if (entity.path.length < currentDefaultPath.length) {
@@ -136,21 +135,59 @@ class MetaFrameProvider extends FrameProvider {
         for (final variantSpecifier in variantSpecifiers) {
           final name = entity.path.split('/').last.toLowerCase();
 
-          if (name.contains(variantSpecifier)) {
-            if (entity.path.length < shortestVariantMatchPath.length) {
-              shortestVariantMatchPath = entity.path;
-              foundVariantMatch = variantSpecifier;
-              break;
-            }
+          if (!name.contains(variantSpecifier)) {
+            continue;
           }
+
+          if (!possibleMatches.containsKey(entity.path)) {
+            possibleMatches[entity.path] = [variantSpecifier];
+            continue;
+          }
+
+          possibleMatches[entity.path]!.add(variantSpecifier);
         }
       }
 
-      if (foundVariantMatch == null) {
+      if (possibleMatches.isEmpty) {
         currentPath = currentDefaultPath;
       } else {
-        currentPath = shortestVariantMatchPath;
-        variantSpecifiers.remove(foundVariantMatch);
+        // find the paths that match the most criteria
+        final bestMatches = {};
+        int bestMatchesLength = 0;
+        for (final e in possibleMatches.entries) {
+          if (e.value.length < bestMatchesLength) {
+            continue;
+          }
+
+          if (e.value.length > bestMatchesLength) {
+            bestMatches.clear();
+            bestMatchesLength = e.value.length;
+          }
+          bestMatches[e.key] ??= [];
+          bestMatches[e.key]!.addAll(e.value);
+        }
+
+        // if there is only one path that has the most matches, we can use it
+        if (bestMatches.length == 1) {
+          currentPath = bestMatches.keys.first;
+          variantSpecifiers.removeWhere(
+            (e) => bestMatches.values.first.contains(e),
+          );
+          continue;
+        }
+
+        // if there are multiple paths that have the same amount of matches, we
+        // pick the shortest one
+        String shortestPath = bestMatches.keys.first;
+        for (final path in bestMatches.keys) {
+          if (path.length < shortestPath.length) {
+            shortestPath = path;
+          }
+        }
+        currentPath = shortestPath;
+        variantSpecifiers.removeWhere(
+          (e) => bestMatches[shortestPath].contains(e),
+        );
       }
     }
 

@@ -124,7 +124,8 @@ class ImageMagickScreenshotFrame {
   }
 
   Future<void> applyImageMagick(
-    String screenshotPath, {
+    String screenshotPath,
+    String outputPath, {
     String? title,
     bool addAutoLineBreaks = true,
     CSize? screenshotSize,
@@ -141,7 +142,7 @@ class ImageMagickScreenshotFrame {
     final maskOp = MagickOp.background('none')
         .chain(MagickOp.addSpaceTop(mask.edges.top))
         .chain(MagickOp.addSpaceLeft(mask.edges.left))
-        .chain(MagickOp.gravity('northwest'))
+        .chain(MagickOp.gravity(MagickOptGravity.northWest))
         .chain(
             MagickOp.extent(width: mask.mask.width, height: mask.mask.height))
         .chain(MagickOp.input(_maskTempPath!))
@@ -149,24 +150,28 @@ class ImageMagickScreenshotFrame {
 
     // resize the frame so that the screenshot has the same size as the screen
     // in the frame
-    final backgroundOp = MagickOp.input(framePath).chain(
-        MagickOp.resize(width: mask.mask.width, height: mask.mask.height));
+    final backgroundOp = MagickOp.input(framePath)
+        .chain(MagickOp.gravity(MagickOptGravity.center))
+        .chain(
+            MagickOp.resize(width: mask.mask.width, height: mask.mask.height));
 
     var op = maskOp
         .chain(backgroundOp)
-        .chain(MagickOp.compose('SrcOver'))
+        .chain(MagickOp.compose(MagickOptCompose.srcOver))
         .chain(MagickOp.composite())
         .chain(MagickOp.trim());
 
-    frameConfig ??= ScreenshotFrameConfig.fromConfigFiles();
-    String destPath =
-        screenshotPath.replaceAll('.png', '${frameConfig.suffixFrame}.png');
-
     // add the title to the screenshot
     if (title != null) {
-      const spaceForText = 300;
+      if (frameConfig == null) {
+        throw ArgumentError.value(
+          frameConfig,
+          'frameConfig',
+          'must not be null if title is not null',
+        );
+      }
 
-      destPath = destPath.replaceAll('.png', '${frameConfig.suffixText}.png');
+      const spaceForText = 300;
 
       final size = screenshotSize ?? await getImageSize(screenshotPath);
       final width =
@@ -199,7 +204,7 @@ class ImageMagickScreenshotFrame {
 
       op = op
           .chain(MagickOp.background(frameConfig.background ?? 'white'))
-          .chain(MagickOp.gravity('south'))
+          .chain(MagickOp.gravity(MagickOptGravity.south))
           .chain(MagickOp.resize(width: width))
           .chain(MagickOp.addSpaceTop(spaceForText))
           .chain(MagickOp.extent(width: size.width, height: size.height))
@@ -213,7 +218,7 @@ class ImageMagickScreenshotFrame {
             ),
           );
     }
-    await op.run(screenshotPath, destPath);
+    await op.run(screenshotPath, outputPath);
   }
 
   /// Apply the frame to the screenshot. The screenshot is scaled to fit the

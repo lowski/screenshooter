@@ -171,6 +171,7 @@ frameSelectors:
 # Override the device name used to select the frame. The key is the device identifier from the screenshooter configuration. The value is the name to use for finding a matching frame instead of the simulator name.
 deviceFrameNames:
   iphone_55: iPhone SE # The "(3rd generation)" is left out for the name of the frame
+  ipad129: iPad Pro, iPad Pro 13 # in case of the Meta frames we need both as they are on different folder levels
 
 # The background color for the screenshot. Can be either a hex color or a color name
 # as recognized by ImageMagick.

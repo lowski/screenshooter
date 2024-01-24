@@ -9,6 +9,8 @@ import 'package:screenshooter/src/framing/image_magick.dart';
 import 'package:screenshooter/src/framing/screenshot_frame.dart';
 import 'package:screenshooter/src/framing/utils.dart';
 import 'package:screenshooter/src/host/args.dart';
+import 'package:screenshooter/src/host/ios_simulator.dart';
+import 'package:screenshooter/src/host/utils.dart';
 
 const _defaultFrameSelectors = ['white', 'silver', 'starlight'];
 
@@ -31,25 +33,13 @@ void main(List<String> argv) async {
   int screenshotsDone = 0;
 
   for (final (i, deviceName) in deviceNames.indexed) {
-    print(
-        'Framing screenshots for device "$deviceName" (${i + 1} / ${deviceNames.length} devices)...');
+    print('');
+    print('Device: "$deviceName" (${i + 1}/${deviceNames.length})');
     final deviceId = args.devices[deviceName]!;
 
-    final isTablet = deviceName.contains('iPad');
-
-    // find the correct frame image
-    final overlay = await provider.findBestMatch([
-      cfg.deviceFrameNames.containsKey(deviceId)
-          ? cfg.deviceFrameNames[deviceId]!
-          : deviceName,
-      if (isTablet) 'tablets',
-      ...(cfg.frameSelectors ?? _defaultFrameSelectors),
-    ]);
-    print('Using frame "$overlay" for device "$deviceName".');
-
-    // We can pre-load the frame here, because it is the same for all
-    // screenshots of this device.
-    final frame = await ImageMagickScreenshotFrame.fromFile(overlay);
+    final isTablet =
+        deviceName.contains('iPad') || deviceId.toLowerCase().contains('ipad');
+    final isLandscape = isTablet && args.tabletOrientation.isLandscape;
 
     // Same for the size of the screenshot
     final generalPath = args.path
@@ -62,19 +52,48 @@ void main(List<String> argv) async {
       continue;
     }
     screenshotsTotal = screenshotsForDevice.length * deviceNames.length;
-    final screenshotSize = await getImageSize(screenshotsForDevice.first.path);
+
+    // find the correct frame image
+    final overlay = await _findBestOverlay(
+      deviceName: deviceName,
+      deviceId: deviceId,
+      cfg: cfg,
+      args: args,
+      provider: provider,
+    );
+    print('Frame: ${overlay.split('/').last}.');
+
+    // Pre-load the frame as it's the same for all screenshots of this device
+    final frame = await ImageMagickScreenshotFrame.fromFile(overlay);
+
+    CSize screenshotSize = await getImageSize(screenshotsForDevice.first.path);
+    if (isLandscape) {
+      screenshotSize = screenshotSize.flipped;
+    }
 
     for (final locale in locales) {
-      String path = args.path
+      final glob = Glob(args.path
           .replaceAll('{locale}', locale)
           .replaceAll('{name}', '*')
-          .replaceAll('{device}', deviceId);
-
-      final glob = Glob(path);
+          .replaceAll('{device}', deviceId));
 
       for (final file in glob.listSync()) {
+        String inputPath = file.path;
+        final outputPath = inputPath.replaceAll(
+            '.png', '${cfg.suffixFrame}${cfg.suffixText}.png');
+
+        if (isLandscape) {
+          // The screenshot has been taken in landscape mode, but the image is
+          // still in portrait mode so we need to rotate it.
+          // Also we store the rotated image to the output path so that the
+          // framing operation is idempotent (if input != output).
+          await MagickOp.rotate(-90).run(inputPath, outputPath);
+          inputPath = outputPath;
+        }
+
         await frame.applyImageMagick(
-          file.path,
+          inputPath,
+          outputPath,
           title: findTitle(
             cfg: cfg,
             basename: file.basename,
@@ -83,9 +102,41 @@ void main(List<String> argv) async {
           screenshotSize: screenshotSize,
           frameConfig: cfg,
         );
+
         screenshotsDone++;
-        print('[$screenshotsDone/$screenshotsTotal] "${file.path}" done');
+        print('  [✓] ${file.path} ($screenshotsDone/$screenshotsTotal total)');
       }
     }
+
+    await frame.dispose();
   }
+}
+
+Future<String> _findBestOverlay({
+  required String deviceName,
+  required String deviceId,
+  required ScreenshotFrameConfig cfg,
+  required ScreenshotArgs args,
+  required FrameProvider provider,
+}) {
+  final overlayCriteria = <String>[
+    if (deviceName.contains('iPad') ||
+        deviceId.toLowerCase().contains('ipad')) ...[
+      'tablets',
+      args.tabletOrientation.isLandscape ? 'landscape' : 'portrait',
+    ],
+    ...(cfg.frameSelectors ?? _defaultFrameSelectors),
+  ];
+
+  if (cfg.deviceFrameNames.containsKey(deviceId)) {
+    overlayCriteria.addAll(
+      cfg.deviceFrameNames[deviceId]!.split(',').map(
+            (e) => e.trim(),
+          ),
+    );
+  } else {
+    overlayCriteria.add(deviceName);
+  }
+
+  return provider.findBestMatch(overlayCriteria);
 }

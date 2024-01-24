@@ -147,7 +147,7 @@ math.Rectangle<int> getInnerScreenEdges(Image image) {
   Image mask = Image.from(img);
 
   final bg = ColorRgba8(0, 0, 0, 0);
-  final color = ColorRgba8(255, 255, 255, 255);
+  final color = ColorRgba8(255, 0, 255, 255);
   fill(mask, color: bg);
 
   final edges = getInnerScreenEdges(img);

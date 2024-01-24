@@ -39,6 +39,9 @@ class CSize {
 
   CSize(this.width, this.height);
 
+  /// Returns a new [CSize] with the width and height flipped.
+  CSize get flipped => CSize(height, width);
+
   @override
   String toString() => '($width,$height)';
 }

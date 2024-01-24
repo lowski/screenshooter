@@ -67,7 +67,7 @@ Future<void> applyText({
   final size = await getImageSize(path);
 
   var op = MagickOp.background(cfg.background ?? 'white')
-      .chain(MagickOp.gravity('south'))
+      .chain(MagickOp.gravity(MagickOptGravity.south))
       .chain(MagickOp.resize(width: '$width%'))
       // .chain(MagickOp.addSpaceTop(1.5 * textHeight))
       .chain(MagickOp.addSpaceTop(spaceForText))
@@ -101,7 +101,7 @@ Future<MagickOp> applyTextOperation({
   const spaceForText = 300;
 
   return MagickOp.background(cfg.background ?? 'white')
-      .chain(MagickOp.gravity('south'))
+      .chain(MagickOp.gravity(MagickOptGravity.south))
       .chain(MagickOp.resize(width: '$width%'))
       // .chain(MagickOp.addSpaceTop(1.5 * textHeight))
       .chain(MagickOp.addSpaceTop(spaceForText))
