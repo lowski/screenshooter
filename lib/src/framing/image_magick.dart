@@ -131,9 +131,9 @@ class MagickOp {
       'magick',
       if (input != null) input,
       ...this.args,
-      '-limit',
-      'thread',
-      '1',
+      // '-limit',
+      // 'thread',
+      // '1',
       output,
     ];
     // print(args.map((e) => e.contains(' ') ? '"$e"' : e).join(' '));

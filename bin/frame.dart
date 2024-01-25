@@ -102,6 +102,12 @@ void main(List<String> argv) async {
           screenshotsDone++;
           print('[✓] ${file.path} ($screenshotsDone/$screenshotsTotal total)');
         });
+
+        // there is some weirdness going on with the image magick process and
+        // it seems that it can't handle mulitple processes at once very well.
+        // So for now we just wait for each frame to finish before starting the
+        // next one. This is not the fastest way but it's the most reliable.
+        await frameFuture;
       }
     }
 
