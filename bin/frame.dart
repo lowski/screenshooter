@@ -82,15 +82,6 @@ void main(List<String> argv) async {
         final outputPath = inputPath.replaceAll(
             '.png', '${cfg.suffixFrame}${cfg.suffixText}.png');
 
-        if (isLandscape) {
-          // The screenshot has been taken in landscape mode, but the image is
-          // still in portrait mode so we need to rotate it.
-          // Also we store the rotated image to the output path so that the
-          // framing operation is idempotent (if input != output).
-          await MagickOp.rotate(-90).run(inputPath, outputPath);
-          inputPath = outputPath;
-        }
-
         await frame.applyImageMagick(
           inputPath,
           outputPath,
@@ -101,6 +92,7 @@ void main(List<String> argv) async {
           ),
           screenshotSize: screenshotSize,
           frameConfig: cfg,
+          rotateLeft: isLandscape,
         );
 
         screenshotsDone++;

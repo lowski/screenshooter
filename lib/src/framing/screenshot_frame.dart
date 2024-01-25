@@ -128,23 +128,29 @@ class ImageMagickScreenshotFrame {
     String outputPath, {
     String? title,
     bool addAutoLineBreaks = true,
-    CSize? screenshotSize,
+    required CSize screenshotSize,
     ScreenshotFrameConfig? frameConfig,
+    bool rotateLeft = false,
   }) async {
     if (_frame == null || _mask == null || _edges == null) {
-      final size = await getImageSize(screenshotPath);
-      calculateMask(size.width.toInt(), size.height.toInt());
+      calculateMask(
+        screenshotSize.width.toInt(),
+        screenshotSize.height.toInt(),
+      );
     }
 
     final mask = this.mask;
 
     // apply the screen mask to the screenshot
     final maskOp = MagickOp.background('none')
+        .chain(MagickOp.rotate(rotateLeft ? -90 : 0))
         .chain(MagickOp.addSpaceTop(mask.edges.top))
         .chain(MagickOp.addSpaceLeft(mask.edges.left))
         .chain(MagickOp.gravity(MagickOptGravity.northWest))
-        .chain(
-            MagickOp.extent(width: mask.mask.width, height: mask.mask.height))
+        .chain(MagickOp.extent(
+          width: mask.mask.width,
+          height: mask.mask.height,
+        ))
         .chain(MagickOp.input(_maskTempPath!))
         .chain(MagickOp.mask());
 
