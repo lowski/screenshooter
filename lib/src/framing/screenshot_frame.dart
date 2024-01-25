@@ -123,9 +123,26 @@ class ImageMagickScreenshotFrame {
     }
   }
 
-  Future<void> applyImageMagick(
+  Future<void> apply(
     String screenshotPath,
     String outputPath, {
+    String? title,
+    bool addAutoLineBreaks = true,
+    required CSize screenshotSize,
+    ScreenshotFrameConfig? frameConfig,
+    bool rotateLeft = false,
+  }) async {
+    final op = await getMagickOperation(
+      title: title,
+      addAutoLineBreaks: addAutoLineBreaks,
+      screenshotSize: screenshotSize,
+      frameConfig: frameConfig,
+      rotateLeft: rotateLeft,
+    );
+    await op.run(screenshotPath, outputPath);
+  }
+
+  Future<MagickOp> getMagickOperation({
     String? title,
     bool addAutoLineBreaks = true,
     required CSize screenshotSize,
@@ -179,8 +196,6 @@ class ImageMagickScreenshotFrame {
         );
       }
 
-      screenshotSize ??= await getImageSize(screenshotPath);
-
       final textOp = await _applyText(
         targetSize: screenshotSize,
         title: title,
@@ -190,7 +205,7 @@ class ImageMagickScreenshotFrame {
 
       op = op.chain(textOp);
     }
-    await op.run(screenshotPath, outputPath);
+    return op;
   }
 
   Future<MagickOp> _applyText({

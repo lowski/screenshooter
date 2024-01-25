@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:core';
 
 import '../host/utils.dart';
@@ -130,6 +131,9 @@ class MagickOp {
       'magick',
       if (input != null) input,
       ...this.args,
+      '-limit',
+      'thread',
+      '1',
       output,
     ];
     // print(args.map((e) => e.contains(' ') ? '"$e"' : e).join(' '));
@@ -266,6 +270,7 @@ class MagickOp {
       MagickOp.compose(MagickOptCompose.dstIn).chain(MagickOp.composite());
 }
 
+final _textSizeCompleters = <int, Completer<CSize>>{};
 final _textSizeCache = <int, CSize>{};
 
 /// Get the size of a text.
@@ -280,6 +285,10 @@ Future<CSize> getTextSize({
   if (_textSizeCache.containsKey(hash)) {
     return _textSizeCache[hash]!;
   }
+  if (_textSizeCompleters.containsKey(hash)) {
+    return _textSizeCompleters[hash]!.future;
+  }
+  _textSizeCompleters[hash] = Completer();
 
   var op = MagickOp('size', 'x');
   if (font != null) {
@@ -299,9 +308,12 @@ Future<CSize> getTextSize({
     int.parse(parts[1]),
   );
   _textSizeCache[hash] = result;
+  _textSizeCompleters[hash]!.complete(result);
+  _textSizeCompleters.remove(hash);
   return result;
 }
 
+final _imageSizeCompleters = <int, Completer<CSize>>{};
 final _imageSizeCache = <int, CSize>{};
 
 /// Get the size of an image.
@@ -312,6 +324,10 @@ Future<CSize> getImageSize(String path, {bool trim = false}) async {
   if (_imageSizeCache.containsKey(hash)) {
     return _imageSizeCache[hash]!;
   }
+  if (_imageSizeCompleters.containsKey(hash)) {
+    return _imageSizeCompleters[hash]!.future;
+  }
+  _imageSizeCompleters[hash] = Completer();
 
   var op = MagickOp.format('%wx%h');
   if (trim) {
@@ -324,5 +340,7 @@ Future<CSize> getImageSize(String path, {bool trim = false}) async {
     int.parse(parts[1]),
   );
   _imageSizeCache[hash] = result;
+  _imageSizeCompleters[hash]!.complete(result);
+  _imageSizeCompleters.remove(hash);
   return result;
 }

@@ -71,6 +71,8 @@ void main(List<String> argv) async {
       screenshotSize = screenshotSize.flipped;
     }
 
+    final frameFutures = <Future>[];
+
     for (final locale in locales) {
       final glob = Glob(args.path
           .replaceAll('{locale}', locale)
@@ -82,7 +84,7 @@ void main(List<String> argv) async {
         final outputPath = inputPath.replaceAll(
             '.png', '${cfg.suffixFrame}${cfg.suffixText}.png');
 
-        await frame.applyImageMagick(
+        final frameFuture = frame.apply(
           inputPath,
           outputPath,
           title: findTitle(
@@ -94,13 +96,16 @@ void main(List<String> argv) async {
           frameConfig: cfg,
           rotateLeft: isLandscape,
         );
+        frameFutures.add(frameFuture);
 
-        screenshotsDone++;
-        print('  [✓] ${file.path} ($screenshotsDone/$screenshotsTotal total)');
+        frameFuture.then((value) {
+          screenshotsDone++;
+          print('[✓] ${file.path} ($screenshotsDone/$screenshotsTotal total)');
+        });
       }
     }
 
-    await frame.dispose();
+    Future.wait(frameFutures).then((value) => frame.dispose());
   }
 }
 
