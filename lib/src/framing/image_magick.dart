@@ -84,6 +84,12 @@ class MagickOptCompose extends _StringEnum {
   const MagickOptCompose._(super.value);
 }
 
+enum TextAlignment {
+  left,
+  center,
+  right,
+}
+
 class MagickOp {
   final List<MagickOp> prev;
   final List<String> _args;
@@ -119,6 +125,7 @@ class MagickOp {
       );
 
   Future<String> run(String? input, String output) async {
+    // final time = DateTime.now();
     final args = [
       'magick',
       if (input != null) input,
@@ -127,6 +134,7 @@ class MagickOp {
     ];
     // print(args.map((e) => e.contains(' ') ? '"$e"' : e).join(' '));
     final result = await exec(args);
+    // print('  [${DateTime.now().difference(time).inMilliseconds} ms] $args');
     return result.stdout;
   }
 
@@ -203,16 +211,29 @@ class MagickOp {
         MagickOp.splice(width: 0, height: size, x: 0, y: 0),
       );
 
+  /// Adds text to the image.
+  ///
+  /// [alignment] is the alignment of the text within the text block itself.
+  ///
+  /// [anchor] is the alignment of the text block within the image.
+  ///
+  /// [x] and [y] are the offsets of the text block within the image relative to
+  /// the given [anchor].
   factory MagickOp.text({
     required String text,
     String? font,
-    int size = 24,
+    num? fontSize,
     String? color,
     dynamic x = 0,
     dynamic y = 0,
+    TextAlignment alignment = TextAlignment.center,
+    MagickOptGravity? anchor,
   }) {
-    var op = MagickOp.gravity(MagickOptGravity.north)
-        .chain(MagickOp.pointsize(size));
+    var op = MagickOp.background('transparent');
+
+    if (fontSize != null) {
+      op = op.chain(MagickOp.pointsize(fontSize.toInt()));
+    }
 
     if (font != null) {
       op = op.chain(MagickOp.font(font));
@@ -222,18 +243,44 @@ class MagickOp {
       op = op.chain(MagickOp.fill(color));
     }
 
-    return op.chain(MagickOp.annotate(text: text, x: x, y: y));
+    final gravity = switch (alignment) {
+      TextAlignment.left => MagickOptGravity.northWest,
+      TextAlignment.center => MagickOptGravity.north,
+      TextAlignment.right => MagickOptGravity.northEast,
+    };
+
+    op = op
+        .chain(MagickOp.gravity(gravity))
+        .chain(MagickOp('', 'label:$text'))
+        .chain(MagickOp.trim())
+        .grouped()
+        .chain(MagickOp.gravity(anchor ?? gravity))
+        .chain(MagickOp.geometry(x: '+$x', y: '+$y'))
+        .chain(MagickOp.compose(MagickOptCompose.srcAtop))
+        .chain(MagickOp.composite());
+
+    return op;
   }
 
   factory MagickOp.mask() =>
       MagickOp.compose(MagickOptCompose.dstIn).chain(MagickOp.composite());
 }
 
+final _textSizeCache = <int, CSize>{};
+
+/// Get the size of a text.
+///
+/// The result is cached.
 Future<CSize> getTextSize({
   required String text,
   String? font,
   num? fontSize,
 }) async {
+  final hash = '$text|$font|$fontSize'.hashCode;
+  if (_textSizeCache.containsKey(hash)) {
+    return _textSizeCache[hash]!;
+  }
+
   var op = MagickOp('size', 'x');
   if (font != null) {
     op = op.chain(MagickOp.font(font));
@@ -241,22 +288,41 @@ Future<CSize> getTextSize({
   if (fontSize != null) {
     op = op.chain(MagickOp.pointsize(fontSize.toInt()));
   }
-  op = op.chain(MagickOp('', 'label:$text')).chain(MagickOp.format('%wx%h'));
+  op = op
+      .chain(MagickOp('', 'label:$text'))
+      .chain(MagickOp.format('%wx%h'))
+      .chain(MagickOp.trim());
 
-  final result = await op.run(null, 'info:');
-  final parts = result.split('x');
-  return CSize(
+  final parts = (await op.run(null, 'info:')).split('x');
+  final result = CSize(
     int.parse(parts[0]),
     int.parse(parts[1]),
   );
+  _textSizeCache[hash] = result;
+  return result;
 }
 
-Future<CSize> getImageSize(String path) async {
-  final result = await MagickOp.format('%wx%h').run(path, 'info:');
-  final parts = result.split('x');
-  final size = CSize(
+final _imageSizeCache = <int, CSize>{};
+
+/// Get the size of an image.
+///
+/// The result is cached.
+Future<CSize> getImageSize(String path, {bool trim = false}) async {
+  final hash = '$path|$trim'.hashCode;
+  if (_imageSizeCache.containsKey(hash)) {
+    return _imageSizeCache[hash]!;
+  }
+
+  var op = MagickOp.format('%wx%h');
+  if (trim) {
+    op = op.chain(MagickOp.trim());
+  }
+
+  final parts = (await op.run(path, 'info:')).split('x');
+  final result = CSize(
     int.parse(parts[0]),
     int.parse(parts[1]),
   );
-  return size;
+  _imageSizeCache[hash] = result;
+  return result;
 }

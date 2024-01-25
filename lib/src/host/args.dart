@@ -39,6 +39,7 @@ class ScreenshotFrameConfig {
   final String suffixFrame;
   final String suffixText;
   final Map<String, String> deviceFrameNames;
+  final bool scaleDownFrameToFit;
 
   ScreenshotFrameConfig._({
     this.background,
@@ -51,6 +52,7 @@ class ScreenshotFrameConfig {
     this.suffixFrame = '_framed',
     this.suffixText = '',
     this.deviceFrameNames = const {},
+    this.scaleDownFrameToFit = false,
   });
 
   factory ScreenshotFrameConfig.fromJson(Map json) => ScreenshotFrameConfig._(
@@ -66,6 +68,7 @@ class ScreenshotFrameConfig {
         suffixText: json['suffixText'] ?? '',
         deviceFrameNames:
             json['deviceFrameNames']?.cast<String, String>() ?? {},
+        scaleDownFrameToFit: json['scaleDownFrameToFit'] ?? false,
       );
 
   /// Loads the configuration from a file. First, it tries to load the

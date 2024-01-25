@@ -111,7 +111,7 @@ class ImageMagickScreenshotFrame {
     _edges = edges;
 
     // temporarily store the mask to disk for use with image magick
-    _maskTempPath = './mask.tmp.png';
+    _maskTempPath = './${framePath.split('/').last}-mask.tmp.png';
     this.mask.save(_maskTempPath!);
 
     return this.mask;
@@ -152,8 +152,10 @@ class ImageMagickScreenshotFrame {
     // in the frame
     final backgroundOp = MagickOp.input(framePath)
         .chain(MagickOp.gravity(MagickOptGravity.center))
-        .chain(
-            MagickOp.resize(width: mask.mask.width, height: mask.mask.height));
+        .chain(MagickOp.resize(
+          width: mask.mask.width,
+          height: mask.mask.height,
+        ));
 
     var op = maskOp
         .chain(backgroundOp)
@@ -171,79 +173,111 @@ class ImageMagickScreenshotFrame {
         );
       }
 
-      const spaceForText = 300;
+      screenshotSize ??= await getImageSize(screenshotPath);
 
-      final size = screenshotSize ?? await getImageSize(screenshotPath);
-      final width =
-          ((1 - 2 * (frameConfig.paddingPercent ?? 0) / 100) * size.width)
-              .toInt();
+      final textOp = await _applyText(
+        targetSize: screenshotSize,
+        title: title,
+        frameConfig: frameConfig,
+        addAutoLineBreaks: addAutoLineBreaks,
+      );
 
-      if (addAutoLineBreaks) {
-        final textSize = await getTextSize(
-          text: title,
-          font: frameConfig.font,
-          fontSize: frameConfig.fontSize,
-        );
-
-        // split the title into two lines so that roughly the same number
-        // of characters are on each line
-        if (textSize.width > width) {
-          int pointer = 0;
-          final int centerPosition = title.length ~/ 2;
-
-          while (title[centerPosition + pointer] != ' ' &&
-              centerPosition + pointer > 0 &&
-              centerPosition + pointer < title.length) {
-            pointer = pointer < 0 ? -pointer : -pointer - 1; // -1, 1, -2, 2, ..
-          }
-          final firstLine = title.substring(0, centerPosition + pointer);
-          final secondLine = title.substring(centerPosition + pointer + 1);
-          title = '$firstLine\n$secondLine';
-        }
-      }
-
-      op = op
-          .chain(MagickOp.background(frameConfig.background ?? 'white'))
-          .chain(MagickOp.gravity(MagickOptGravity.south))
-          .chain(MagickOp.resize(width: width))
-          .chain(MagickOp.addSpaceTop(spaceForText))
-          .chain(MagickOp.extent(width: size.width, height: size.height))
-          .chain(
-            MagickOp.text(
-              text: title,
-              color: frameConfig.fontColor ?? 'black',
-              size: frameConfig.fontSize?.toInt() ?? 24,
-              y: spaceForText / 2,
-              font: frameConfig.font,
-            ),
-          );
+      op = op.chain(textOp);
     }
     await op.run(screenshotPath, outputPath);
   }
 
-  /// Apply the frame to the screenshot. The screenshot is scaled to fit the
-  /// screen in the frame.
-  ///
-  /// The calculation of the mask and frame is cached, so this method can be
-  /// called for multiple screenshots.
-  ///
-  /// Returns a new image, that does not have the same dimensions as the
-  /// screenshot.
-  Image apply(Image screenshot) {
-    if (_frame == null || _mask == null || _edges == null) {
-      calculateMask(screenshot.width, screenshot.height);
+  Future<MagickOp> _applyText({
+    required CSize targetSize,
+    required String title,
+    required ScreenshotFrameConfig frameConfig,
+    bool addAutoLineBreaks = true,
+  }) async {
+    final fontSize = frameConfig.fontSize ?? 24;
+
+    CSize textSize = await getTextSize(
+      text: title,
+      font: frameConfig.font,
+      fontSize: fontSize,
+    );
+    final textPadding = textSize.height;
+
+    final scaleFactor = 1 - 2 * (frameConfig.paddingPercent ?? 0) / 100;
+    final targetWidth = targetSize.width * scaleFactor;
+
+    if (addAutoLineBreaks) {
+      // split the title into two lines so that roughly the same number
+      // of characters are on each line
+      if (textSize.width > targetWidth) {
+        title = _insertAutoLineBreak(title, title.length ~/ 2);
+        textSize = await getTextSize(
+          text: title,
+          font: frameConfig.font,
+          fontSize: fontSize,
+        );
+      }
     }
-    assert(
-      _frame != null && _mask != null && _edges != null,
-      'Frame not calculated. Something went wrong.',
-    );
-    final masked = compositeImage(
-      Image.from(_mask!),
-      screenshot,
-      dstX: _edges!.left,
-      dstY: _edges!.top,
-      mask: _mask!,
-    );
-    return compositeImage(masked, _frame!);
+
+    final frameSize = await getImageSize(framePath, trim: true);
+    CSize resizedFrameSize = frameSize * (targetWidth / frameSize.width);
+
+    final textSpaceRequired = textSize.height + textPadding * 2;
+    int textSpaceAvailable =
+        (targetSize.height - resizedFrameSize.height).round();
+
+    // Check if the frame is too big to fit onto the screenshot
+    // If so we need to make the frame even smaller
+    if (textSpaceRequired > textSpaceAvailable &&
+        frameConfig.scaleDownFrameToFit) {
+      final newHeight =
+          resizedFrameSize.height - textSpaceRequired + textSpaceAvailable;
+      resizedFrameSize =
+          resizedFrameSize * (newHeight / resizedFrameSize.height);
+      textSpaceAvailable =
+          (targetSize.height - resizedFrameSize.height).round();
+    }
+
+    final spaceAbove = math.max(textSpaceAvailable, textSpaceRequired);
+
+    return MagickOp.background(frameConfig.background ?? 'white')
+        .chain(MagickOp.gravity(MagickOptGravity.south))
+        .chain(MagickOp.resize(width: resizedFrameSize.width))
+        .chain(MagickOp.extent(
+          width: resizedFrameSize.width,
+          height: resizedFrameSize.height + spaceAbove,
+        ))
+        .chain(MagickOp.text(
+          text: title,
+          font: frameConfig.font,
+          fontSize: fontSize,
+          color: frameConfig.fontColor ?? 'black',
+          y: (spaceAbove - textSize.height) / 2,
+        ))
+        .chain(MagickOp.background(frameConfig.background ?? 'white'))
+        .chain(MagickOp.extent(
+          width: targetSize.width,
+          height: targetSize.height,
+        ));
+  }
+
+  /// Add a single line break as close to the [position] as possible.
+  ///
+  /// If [position] is in the middle of a word, the line break is inserted
+  /// before or after the word, depending on which is closer to [position].
+  ///
+  /// If [position] is not given it defaults to the middle of [s].
+  String _insertAutoLineBreak(String s, [int? position]) {
+    int pointer = 0;
+
+    position ??= s.length ~/ 2;
+
+    while (s[position + pointer] != ' ' &&
+        position + pointer > 0 &&
+        position + pointer < s.length) {
+      pointer = pointer < 0 ? -pointer : -pointer - 1; // -1, 1, -2, 2, ..
+    }
+    final firstLine = s.substring(0, position + pointer);
+    final secondLine = s.substring(position + pointer + 1);
+    return '$firstLine\n$secondLine';
   }
 }

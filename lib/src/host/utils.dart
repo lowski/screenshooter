@@ -44,6 +44,9 @@ class CSize {
 
   @override
   String toString() => '($width,$height)';
+
+  operator *(num factor) =>
+      CSize((width * factor).round(), (height * factor).round());
 }
 
 class Profiler {

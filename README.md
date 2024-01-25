@@ -179,6 +179,10 @@ background: black
 # The amount of padding on each side in percent. Relative to the width of
 # the screenshot.
 paddingPercent: 5
+# If the frame does not fit into the screenshot after adding the title we can either scale
+# down the frame until it does fit or move it down and out of the image so it is only
+# partially visible. By default the frame is moved down (`scaleDownFrameToFit: false`).
+scaleDownFrameToFit: false
 
 # Settings regarding the font used for the title.
 font: ./fonts/OpenSans/OpenSans-Bold.ttf
