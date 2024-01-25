@@ -5,20 +5,24 @@ import 'package:screenshooter/screenshooter.dart';
 enum IpcMessageType {
   screenshot,
   info,
-  @Deprecated('Only for internal use. See [IpcClient.onMessage].')
+  @Deprecated('Only for internal use. See [IpcServer.onMessage].')
   clientDone,
+  @Deprecated('Only for internal use. See [IpcServer.onMessage].')
+  clientIdRequest,
 }
 
 sealed class IpcMessage {
   final IpcMessageType type;
   final Map<String, dynamic>? payload;
+  String? clientId;
 
-  IpcMessage(this.type, this.payload);
+  IpcMessage(this.type, this.payload, {this.clientId});
 
   Map<String, dynamic> toJson() {
     return {
       'type': type.index,
       'payload': payload,
+      'clientId': clientId,
     };
   }
 
@@ -26,11 +30,15 @@ sealed class IpcMessage {
     final type = IpcMessageType.values[json['type']];
     switch (type) {
       case IpcMessageType.screenshot:
-        return ScreenshotIpcMessage.fromJson(json['payload'] ?? {});
+        return ScreenshotIpcMessage.fromJson(json['payload'] ?? {})
+          ..clientId = json['clientId'];
       case IpcMessageType.info:
-        return InfoIpcMessage.fromJson(json['payload'] ?? {});
+        return InfoIpcMessage.fromJson(json['payload'] ?? {})
+          ..clientId = json['clientId'];
       case IpcMessageType.clientDone:
-        return ClientDoneIpcMessage();
+        return ClientDoneIpcMessage()..clientId = json['clientId'];
+      case IpcMessageType.clientIdRequest:
+        return ClientIdRequestIpcMessage()..clientId = json['clientId'];
     }
   }
 
@@ -84,5 +92,13 @@ class ClientDoneIpcMessage extends IpcMessage {
 
   factory ClientDoneIpcMessage.fromJson(Map<String, dynamic> json) {
     return ClientDoneIpcMessage();
+  }
+}
+
+class ClientIdRequestIpcMessage extends IpcMessage {
+  ClientIdRequestIpcMessage() : super(IpcMessageType.clientIdRequest, null);
+
+  factory ClientIdRequestIpcMessage.fromJson(Map<String, dynamic> json) {
+    return ClientIdRequestIpcMessage();
   }
 }

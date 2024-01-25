@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import '../ipc_message.dart';
@@ -8,13 +9,17 @@ import 'ipc_server.dart';
 import 'utils.dart';
 
 class ScreenshotHost {
-  IosSimulator? simulator;
-
   final ScreenshotArgs args;
 
-  String? currentDeviceId;
+  /// The device ID of the next device to be assigned.
+  String? _nextDeviceId;
 
-  List<IosSimulator>? _simulators;
+  /// Completes once [_nextDeviceId] has been assigned to a device.
+  Completer<void>? _deviceIdAssigned;
+
+  final Map<String, IosSimulator> _simulators = {};
+
+  List<IosSimulator>? _simulatorList;
 
   ScreenshotHost({
     List<String>? argv,
@@ -22,16 +27,36 @@ class ScreenshotHost {
 
   /// Run the screenshot host.
   Future<void> run() async {
+    _simulatorList ??= await IosSimulator.listAll();
+    _bootSimulators(args.devices.keys);
+
     if (!args.skipBuild) {
       await _build();
     }
 
-    _simulators ??= await IosSimulator.listAll();
-    _bootSimulators(args.devices.keys);
+    final futures = <Future<void>>[];
+
+    final ipcServer = await IpcServer.start();
+    ipcServer.onMessage = _onMessage;
+    ipcServer.onRequestClientId = _onRequestClientId;
 
     for (final device in args.devices.entries) {
-      await _runDevice(device.key, device.value);
+      _nextDeviceId = device.value;
+      _deviceIdAssigned = Completer();
+
+      final f = _runDevice(
+        deviceName: device.key,
+        deviceId: device.value,
+        ipcServer: ipcServer,
+      );
+      futures.add(f);
+
+      await _deviceIdAssigned!.future;
     }
+
+    await Future.wait(futures);
+
+    await ipcServer.close();
   }
 
   Future<void> _build() async {
@@ -54,32 +79,33 @@ class ScreenshotHost {
   }
 
   /// Upload an existing app bundle to the simulator and run it.
-  Future<void> _runDevice(
-    String deviceName,
+  Future<void> _runDevice({
+    required String deviceName,
     String? deviceId,
-  ) async {
-    currentDeviceId = deviceId;
-    simulator = await _findSimulator(deviceName);
-    await simulator!.boot();
+    required IpcServer ipcServer,
+  }) async {
+    final simulator = await _findSimulator(deviceName);
+    _simulators[deviceId!] = simulator;
+    await simulator.boot();
 
-    if (simulator!.platform == IosSimulatorPlatform.iPad) {
-      await simulator!.setOrientation(args.tabletOrientation);
+    if (simulator.platform == IosSimulatorPlatform.iPad) {
+      await simulator.setOrientation(args.tabletOrientation);
     }
 
-    final ipcServer = await IpcServer.start();
-    ipcServer.onMessage = _onMessage;
+    await simulator.installApp('build/ios/iphonesimulator/Runner.app');
+    await simulator.launchApp(args.bundleId!);
 
-    await simulator!.installApp('build/ios/iphonesimulator/Runner.app');
-    await simulator!.launchApp(args.bundleId!);
+    // Now the app is running and we wait for it to finish.
 
-    await ipcServer.clientDone;
-    await ipcServer.close();
-    await simulator!.shutdown();
+    await ipcServer.clientDone(deviceId);
+
+    _simulators.remove(deviceId);
+    await simulator.shutdown();
   }
 
   Future<IosSimulator> _findSimulator(String name) async {
-    _simulators ??= await IosSimulator.listAll();
-    return _simulators!.firstWhere(
+    _simulatorList ??= await IosSimulator.listAll();
+    return _simulatorList!.firstWhere(
       (element) => element.name == name,
       orElse: () => throw Exception(
         'No simulator with the name "$name" found',
@@ -94,8 +120,14 @@ class ScreenshotHost {
     } else if (message.type == IpcMessageType.info) {
       final infoMessage = message as InfoIpcMessage;
       // ignore: avoid_print
-      print(infoMessage.message);
+      print('[${infoMessage.clientId}] ${infoMessage.message}');
     }
+  }
+
+  Future<String> _onRequestClientId() async {
+    final result = _nextDeviceId ?? 'unknownDevice';
+    _deviceIdAssigned?.complete();
+    return result;
   }
 
   Future<void> _saveScreenshot(ScreenshotIpcMessage msg) async {
@@ -112,11 +144,11 @@ class ScreenshotHost {
     if (filename.contains('{device}')) {
       filename = filename.replaceAll(
         '{device}',
-        currentDeviceId ?? 'unknownDevice',
+        msg.clientId ?? 'unknownDevice',
       );
     }
     await File(filename).create(recursive: true);
 
-    await simulator?.screenshot(filename);
+    await _simulators[msg.clientId]?.screenshot(filename);
   }
 }

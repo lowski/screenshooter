@@ -22,10 +22,9 @@ class IpcServer {
   /// [ClientDoneIpcMessage], instead the [clientDone] future will complete.
   Future<void> Function(IpcMessage message)? onMessage;
 
-  final Completer<void> _doneCompleter = Completer();
+  Future<String> Function()? onRequestClientId;
 
-  /// A future that completes when the client sends a [ClientDoneIpcMessage].
-  Future<void> get clientDone => _doneCompleter.future;
+  final _doneCompleters = <String, Completer<void>>{};
 
   IpcServer._();
 
@@ -42,10 +41,13 @@ class IpcServer {
   /// use [request.response].
   Future<void> _handler(HttpRequest request) async {
     final body = await utf8.decodeStream(request);
+    String? response;
     try {
       final message = IpcMessage.fromJson(jsonDecode(body));
       if (message is ClientDoneIpcMessage) {
-        _doneCompleter.complete();
+        _doneCompleters[message.clientId]?.complete();
+      } else if (message is ClientIdRequestIpcMessage) {
+        response = await onRequestClientId?.call() ?? 'unknownDevice';
       } else {
         await onMessage?.call(message);
       }
@@ -59,7 +61,17 @@ class IpcServer {
     }
 
     request.response.statusCode = HttpStatus.ok;
+    if (response != null) {
+      request.response.write(response);
+    }
     await request.response.close();
+  }
+
+  /// Waits for the client with the given [clientId] to send a
+  /// [ClientDoneIpcMessage].
+  Future<void> clientDone(String clientId) async {
+    _doneCompleters[clientId] ??= Completer();
+    await _doneCompleters[clientId]!.future;
   }
 
   /// Closes this IPC server.

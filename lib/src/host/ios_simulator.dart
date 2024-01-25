@@ -104,15 +104,23 @@ class IosSimulator {
 
   /// Rotate the simulator.
   @Deprecated('Use setOrientation instead.')
-  Future<void> rotate(IosSimulatorRotation rotation) async {
+  Future<void> _rotate(IosSimulatorRotation rotation) async {
     if (!isBooted) {
       throw StateError('Simulator is not booted.');
     }
+
+    // The window title only contains the first parenthesis, so we need to
+    // remove the second one. This would be the case for something like
+    // "iPad Pro (12.9-inch) (6th generation)". In that case the window title
+    // would be "iPad Pro (12.9-inch) – 6th generation - iOS 17.2".
+    final nameUntilSecondOpenParenthesis = name.split('(').take(2).join('(');
 
     await exec([
       'osascript',
       '-e',
       'tell application "Simulator" to activate',
+      '-e',
+      'tell application "System Events" to tell process "Simulator" to perform action "AXRaise" of item 1 of item 1 of (windows whose title contains "$nameUntilSecondOpenParenthesis")',
       '-e',
       'tell application "System Events" to click menu item "Rotate ${rotation == IosSimulatorRotation.left ? 'Left' : 'Right'}" of menu 1 of menu bar item "Device" of menu bar 1 of application process "Simulator"',
     ]);
@@ -131,9 +139,16 @@ class IosSimulator {
       throw StateError('Simulator is not booted.');
     }
 
+    await exec([
+      'osascript',
+      '-e',
+      'display dialog "Hands away from the computer! '
+          '(Screenshooter wants to access the simulator)" giving up after 3',
+    ]);
+
     for (var i = 0; i < (this.orientation.index - orientation.index) % 4; i++) {
       // ignore: deprecated_member_use_from_same_package
-      await rotate(IosSimulatorRotation.left);
+      await _rotate(IosSimulatorRotation.left);
     }
 
     assert(this.orientation == orientation);

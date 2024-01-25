@@ -32,6 +32,7 @@ class ScreenshotSuite {
 
   /// Run this suite.
   Future<void> run() async {
+    await IpcClient.requestClientId();
     await IpcClient.sendInfo('Running suite "$name"');
 
     await prepare?.call();
