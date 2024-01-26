@@ -1,6 +1,6 @@
 name: screenshooter
 description: Automatically create screenshots of your flutter app
-version: 1.0.2
+version: 1.1.0
 homepage: https://github.com/lowski/screenshooter
 
 environment:

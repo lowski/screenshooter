@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+* Properly support iPads and landscape mode
+* Various performance improvements by parallelizing as much as possible
+
 ## 1.0.2
 
 * Set `ScreenshotConfiguration.fromEnv.isActive` to true when running a suite
