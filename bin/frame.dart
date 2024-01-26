@@ -25,17 +25,18 @@ void main(List<String> argv) async {
   await provider.download();
   print('Done.');
 
-  final deviceNames = args.devices.keys;
+  final deviceIds = args.devices.keys;
   final locales =
       args.configuration.locales?.map((e) => e.toLanguageTag()) ?? ['en-US'];
 
   int screenshotsTotal = 0;
   int screenshotsDone = 0;
 
-  for (final (i, deviceName) in deviceNames.indexed) {
+  for (final (i, deviceId) in deviceIds.indexed) {
+    final deviceName = args.devices[deviceId]!;
+
     print('');
-    print('Device: "$deviceName" (${i + 1}/${deviceNames.length})');
-    final deviceId = args.devices[deviceName]!;
+    print('Device: "$deviceName" (${i + 1}/${deviceIds.length})');
 
     final isTablet =
         deviceName.contains('iPad') || deviceId.toLowerCase().contains('ipad');
@@ -51,7 +52,7 @@ void main(List<String> argv) async {
       print('No screenshots found for device "$deviceName".');
       continue;
     }
-    screenshotsTotal = screenshotsForDevice.length * deviceNames.length;
+    screenshotsTotal = screenshotsForDevice.length * deviceIds.length;
 
     // find the correct frame image
     final overlay = await _findBestOverlay(

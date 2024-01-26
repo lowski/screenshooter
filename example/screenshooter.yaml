@@ -15,6 +15,6 @@ locales:
 # This is a list of all the simulators to use. The key is the exact name of the iOS Simulator
 # and the value is the identifier used.
 devices:
-  iPhone 14 Plus: iphone_65
+  iphone_65: iPhone 14 Plus
 # The name of the file to use as the entrypoint for the app.
 target: lib/screenshots.dart

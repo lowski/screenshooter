@@ -28,7 +28,7 @@ class ScreenshotHost {
   /// Run the screenshot host.
   Future<void> run() async {
     _simulatorList ??= await IosSimulator.listAll();
-    _bootSimulators(args.devices.keys);
+    _bootSimulators(args.devices.values);
 
     if (!args.skipBuild) {
       await _build();
@@ -41,12 +41,12 @@ class ScreenshotHost {
     ipcServer.onRequestClientId = _onRequestClientId;
 
     for (final device in args.devices.entries) {
-      _nextDeviceId = device.value;
+      _nextDeviceId = device.key;
       _deviceIdAssigned = Completer();
 
       final f = _runDevice(
-        deviceName: device.key,
-        deviceId: device.value,
+        deviceId: device.key,
+        deviceName: device.value,
         ipcServer: ipcServer,
       );
       futures.add(f);

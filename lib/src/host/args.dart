@@ -29,6 +29,7 @@ T? _loadFromYaml<T>(
 }
 
 class ScreenshotFrameConfig {
+  final String? path;
   final String? background;
   final num? paddingPercent;
   final Map<String, Map<String, String>>? titles;
@@ -42,6 +43,7 @@ class ScreenshotFrameConfig {
   final bool scaleDownFrameToFit;
 
   ScreenshotFrameConfig._({
+    this.path,
     this.background,
     this.paddingPercent,
     this.titles,
@@ -56,6 +58,7 @@ class ScreenshotFrameConfig {
   });
 
   factory ScreenshotFrameConfig.fromJson(Map json) => ScreenshotFrameConfig._(
+        path: json['path'],
         background: json['background'],
         paddingPercent: json['paddingPercent'],
         titles:

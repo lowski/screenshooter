@@ -98,11 +98,11 @@ path: screenshots/{locale}/{name}_{device}.png
 locales:
   - en-US
   - de-DE
-# This is a list of all the simulators to use. The key is the exact name of the iOS Simulator
-# and the value is the identifier used.
+# This is a list of all the simulators to use. The key is the identifier within the context of
+# screenshooter and the value is the exact name of the iOS Simulator.
 devices:
-  iPhone 14 Plus: iphone_65
-  iPhone 8 Plus: iphone_55
+  iphone_65: iPhone 14 Plus
+  iphone_55: iPhone 8 Plus
 # Which orientation the iPad should be in. Can be `portrait` (default) or `landscape`.
 tabletOrientation: portrait
 # The name of the file to use as the entrypoint for the app.
